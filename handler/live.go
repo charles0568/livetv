@@ -66,13 +66,19 @@ func LiveHandler(c *gin.Context) {
 			return
 		}
 		defer resp.Body.Close()
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
+		bodyString := ""
+		if strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
+			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println(err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+			bodyString = string(bodyBytes)
+		} else {
+			log.Println("This is a video")
+			bodyString = "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:5.005,\n" + liveM3U8 // make a fake m3u8 pointing to the target
 		}
-		bodyString := string(bodyBytes)
 		if channelInfo.Proxy {
 			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
 		} else {

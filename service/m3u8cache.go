@@ -49,6 +49,7 @@ func UpdateURLCache() {
 		matched := regex.FindStringSubmatch(value)
 		if len(matched) < 2 {
 			global.URLCache.Delete(k)
+			return true
 		}
 		expireTime := time.Unix(util.String2Int64(matched[1]), 0)
 		if time.Now().After(expireTime) {
