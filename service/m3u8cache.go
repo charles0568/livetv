@@ -33,16 +33,6 @@ func UpdateURLCache() {
 		log.Println(err)
 		return
 	}
-	for _, v := range channels {
-		log.Println("caching", v.URL)
-		liveURL, err := RealGetYoutubeLiveM3U8(v.URL)
-		if err != nil {
-			log.Println(err)
-		} else {
-			global.URLCache.Store(v.URL, liveURL)
-			log.Println(v.URL, "cached")
-		}
-	}
 	global.URLCache.Range(func(k, v interface{}) bool {
 		value := v.(string)
 		regex := regexp.MustCompile(`/expire/(\d+)/`)
@@ -57,4 +47,14 @@ func UpdateURLCache() {
 		}
 		return true
 	})
+	for _, v := range channels {
+		log.Println("caching", v.URL)
+		liveURL, err := RealGetYoutubeLiveM3U8(v.URL)
+		if err != nil {
+			log.Println(err)
+		} else {
+			global.URLCache.Store(v.URL, liveURL)
+			log.Println(v.URL, "cached")
+		}
+	}
 }
