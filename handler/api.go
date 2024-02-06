@@ -76,7 +76,7 @@ func IndexHandler(c *gin.Context) {
 
 	var templateFilename string
 	if langTag == language.Chinese {
-		templateFilename = "index-zh.html"
+		templateFilename = "index.html" //"index-zh.html"
 	} else {
 		templateFilename = "index.html"
 	}
@@ -148,7 +148,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	chURL := c.PostForm("url")
 	chProxy := c.PostForm("proxy") != ""
 	mch := model.Channel{
-		ID: chID,
+		ID:    chID,
 		Name:  chName,
 		URL:   chURL,
 		Proxy: chProxy,

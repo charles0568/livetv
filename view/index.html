@@ -7,6 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LiveTV!</title>
   <link href="/assert/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/assert/css/solid.min.css" rel="stylesheet" />
+  <link href="/assert/css/all.min.css" rel="stylesheet" />
   <!--[if lt IE 9]>
       <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
@@ -17,11 +19,11 @@
 <body>
   <div class="container">
     <h1>LiveTV! <small>Use Youtube live as IPTV feeds</small></h1>
-    <div class="panel panel-primary">
-      <div class="panel-heading">
-        <h3 class="panel-title">Channel Manager</h3>
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h3 class="card-title">Channel Manager</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
         <form role="form" action="/api/newchannel" method="POST">
           <div class="form-group">
             <label for="inputChannelName">Name</label>
@@ -31,10 +33,11 @@
             <label for="inputChannelLiveURL">URL</label>
             <input type="text" class="form-control" id="inputChannelLiveURL" name="url" />
           </div>
-          <div class="checkbox">
-            <label> <input type="checkbox" name="proxy" />Proxy stream </label>
+          <div class="form-check">
+            <input type="checkbox" id="inputChannelProxy" class="form-check-input" name="proxy" />
+            <label class="form-check-label" for="inputChannelProxy">Proxy stream </label>
           </div>
-          <button type="submit" class="btn btn-default">Add Channel</button>
+          <button type="submit" class="btn btn-outline-secondary">Add Channel</button>
         </form>
       </div>
       <div style="overflow-x: auto;">
@@ -45,7 +48,7 @@
             <th>Live</th>
             <th>M3U8</th>
             <th>Proxy</th>
-            <th></th>
+            <th><i class="menu fa-solid fa-bars"></i></th>
           </tr>
           {{range .Channels}}
           <tr>
@@ -56,9 +59,9 @@
             <td>{{ if .Proxy }}<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>{{ end }}</td>
             <td>
               {{ if .ID }}
-              <a onclick="javascript:updateChannel({{.ID}}, {{.Name}}, {{.URL}}, {{.Proxy}})"><span
-                  class="glyphicon glyphicon-edit" aria-hidden="true"></span></a>
-              <a href="/api/delchannel?id={{.ID}}"><span class="glyphicon glyphicon-trash"
+              <a onclick='javascript:updateChannel({{.ID}}, {{.Name}}, {{.URL}}, {{.Proxy}})'><span
+                  class="fa-solid fa-edit" aria-hidden="true"></span></a>
+              <a onclick='javascript:deleteChannel({{.ID}}, {{.Name}})'><span class="fa-solid fa-trash"
                   aria-hidden="true"></span></a>
               {{ end }}
             </td>
@@ -67,18 +70,18 @@
         </table>
       </div>
     </div>
-    <div class="panel panel-danger">
-      <div class="panel-heading">
-        <h3 class="panel-title">Config Manager</h3>
+    <div class="card">
+      <div class="card-header text-white bg-info">
+        <h3 class="card-title">Config Manager</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
         <form role="form" action="/api/updconfig" method="POST">
           <div class="form-group">
             <label for="inputCommand">Youtube-dl Command</label>
             <div class="input-group">
               <input type="text" class="form-control" id="inputCommand" name="cmd" value="{{.Configs.Cmd}}" disabled />
-              <span class="input-group-btn">
-                <button class="btn btn-default" type="button" id="allow-edit-button-cmd">Allow Edit</button>
+              <span class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="allow-edit-button-cmd">Allow Edit</button>
               </span>
             </div>
           </div>
@@ -86,8 +89,8 @@
             <label for="inputArgs">Youtube-dl Args</label>
             <div class="input-group">
               <input type="text" class="form-control" id="inputArgs" name="args" value="{{.Configs.Args}}" disabled />
-              <span class="input-group-btn">
-                <button class="btn btn-default" type="button" id="allow-edit-button-args">Allow Edit</button>
+              <span class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="allow-edit-button-args">Allow Edit</button>
               </span>
             </div>
           </div>
@@ -95,20 +98,20 @@
             <label for="inputBaseURL">BaseURL</label>
             <div class="input-group">
               <input type="url" class="form-control" id="inputBaseURL" name="baseurl" value="{{.Configs.BaseURL}}" />
-              <span class="input-group-btn">
-                <button class="btn btn-default" type="button" id="auto-fill-button">Auto Fill</button>
+              <span class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" id="auto-fill-button">Auto Fill</button>
               </span>
             </div>
           </div>
-          <button type="submit" class="btn btn-default">Save Config</button>
+          <button type="submit" class="btn btn-outline-secondary">Save Config</button>
         </form>
       </div>
     </div>
-    <div class="panel panel-danger">
-      <div class="panel-heading">
-        <h3 class="panel-title">Change Password</h3>
+    <div class="card">
+      <div class="card-header text-white bg-info">
+        <h3 class="card-title">Change Password</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
         <form role="form" action="/api/changepwd" method="POST">
           <div class="form-group">
             <label for="inputPassword">New Password</label>
@@ -122,7 +125,7 @@
               <input type="password" class="form-control" id="inputPassword2" name="password2" />
             </div>
           </div>
-          <button type="submit" class="btn btn-default">Change</button>
+          <button type="submit" class="btn btn-outline-secondary">Change</button>
         </form>
       </div>
     </div>
@@ -137,9 +140,21 @@
   <script src="/assert/js/bootstrap.min.js"></script>
   <script src="/assert/js/bootbox.all.min.js"></script>
   <script>
+    function deleteChannel(id, name) {
+      bootbox.confirm({
+        title: "Delete channel",
+        message: "Do you want to delete the channel \""+ name +"\" ?",
+        callback: result=> {
+          if (result) {
+            location.href = "/api/delchannel?id=" + id
+          }
+        }
+      })
+    }
+
     function updateChannel(id, name, url, proxy) {
       bootbox.confirm('<div><b>Edit channel</b></div>\
-      <div class="panel-body">\
+      <div class="card-body">\
         <form role="form" id="chform" action="/api/updatechannel" method="POST">\
           <div class="form-group">\
             <label for="channelName">Name</label>\
@@ -149,8 +164,9 @@
             <label for="channelLiveURL">URL</label>\
             <input type="text" class="form-control" id="channelLiveURL" name="url" value="'+url+'"/>\
           </div>\
-          <div class="checkbox">\
-            <label> <input type="checkbox" name="proxy" value="'+proxy+'" '+(proxy?"checked":"")+'/>Proxy stream </label>\
+          <div class="form-check">\
+            <input type="checkbox" id="channelProxy" class="form-check-input" name="proxy" value="'+proxy+'" '+(proxy?"checked":"")+'/>\
+            <label class="form-check-label" for="channelProxy">Proxy stream </label>\
           </div>\
           <input type="hidden" name="id" value="'+id+'"/>\
         </form>\
@@ -165,15 +181,16 @@
     })
     $("#allow-edit-button-cmd,#allow-edit-button-args").click(function () {
       bootbox.confirm({
-        message: "Warning:This field shall not be manually changed.",
+        title: "Warning",
+        message: "This field shall not be manually changed.",
         buttons: {
           confirm: {
             label: "Edit Anyway",
-            className: "btn-danger",
+            className: "text-white btn-danger",
           },
           cancel: {
             label: "Okay",
-            className: "btn-secondary",
+            className: "btn-outline-secondary",
           },
         },
         callback: function (result) {
