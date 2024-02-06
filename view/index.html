@@ -56,7 +56,7 @@
             <td>{{.Name}}</td>
             <td>{{.URL}}</td>
             <td>{{.M3U8}}</td>
-            <td>{{ if .Proxy }}<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>{{ end }}</td>
+            <td>{{ if .Proxy }}<span class="fa-solid fa-check" aria-hidden="true"></span>{{ end }}</td>
             <td>
               {{ if .ID }}
               <a onclick='javascript:updateChannel({{.ID}}, {{.Name}}, {{.URL}}, {{.Proxy}})'><span
