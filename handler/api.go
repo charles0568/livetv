@@ -113,7 +113,9 @@ func NewChannelHandler(c *gin.Context) {
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	if chName == "" || chURL == "" {
-		c.Redirect(http.StatusFound, "/")
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"ErrMsg": "Incomplete channel info",
+		})
 		return
 	}
 	chProxy := c.PostForm("proxy") != ""
@@ -146,6 +148,12 @@ func UpdateChannelHandler(c *gin.Context) {
 	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
+	if chName == "" || chURL == "" {
+		c.HTML(http.StatusBadRequest, "error.html", gin.H{
+			"ErrMsg": "Incomplete channel info",
+		})
+		return
+	}
 	chProxy := c.PostForm("proxy") != ""
 	mch := model.Channel{
 		ID:    chID,
