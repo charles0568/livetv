@@ -44,8 +44,12 @@ func main() {
 		if err != nil {
 			log.Panicf("init: %s\n", err)
 		}
-		service.SetConfig("password", *pwd)
-		log.Println("Password has been changed.")
+		err = service.SetConfig("password", *pwd)
+		if err == nil {
+			log.Println("Password has been changed.")
+		} else {
+			log.Println("Failed to reset password:", err.Error())
+		}
 		return
 	}
 
