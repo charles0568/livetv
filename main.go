@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"io"
 	"log"
 	"math/rand"
@@ -22,6 +23,19 @@ import (
 )
 
 func main() {
+	pwd := flag.String("pwd", "", "reset password")
+	flag.Parse()
+	if *pwd != "" {
+		// reset password
+		err := global.InitDB(os.Getenv("LIVETV_DATADIR") + "/livetv.db")
+		if err != nil {
+			log.Panicf("init: %s\n", err)
+		}
+		service.SetConfig("password", *pwd)
+		log.Println("Password has been changed.")
+		return
+	}
+
 	rand.Seed(time.Now().UnixNano())
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Println("Server listen", os.Getenv("LIVETV_LISTEN"))
