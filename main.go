@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -24,10 +25,22 @@ import (
 
 func main() {
 	pwd := flag.String("pwd", "", "reset password")
+	listen := flag.String("listen", ":9000", "listening address")
 	flag.Parse()
+	datadir := os.Getenv("LIVETV_DATADIR")
+	if datadir == "" {
+		ex, err := os.Executable()
+		if err != nil {
+			panic(err)
+		}
+		datadir = filepath.Join(filepath.Dir(ex), "data")
+		os.Setenv("LIVETV_DATADIR", datadir)
+	}
+	os.Mkdir(datadir, os.ModePerm)
+
 	if *pwd != "" {
 		// reset password
-		err := global.InitDB(os.Getenv("LIVETV_DATADIR") + "/livetv.db")
+		err := global.InitDB(datadir + "/livetv.db")
 		if err != nil {
 			log.Panicf("init: %s\n", err)
 		}
@@ -36,16 +49,20 @@ func main() {
 		return
 	}
 
+	binding := os.Getenv("LIVETV_LISTEN")
+	if binding == "" {
+		binding = *listen
+	}
 	rand.Seed(time.Now().UnixNano())
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.Println("Server listen", os.Getenv("LIVETV_LISTEN"))
-	log.Println("Server datadir", os.Getenv("LIVETV_DATADIR"))
-	logFile, err := os.OpenFile(os.Getenv("LIVETV_DATADIR")+"/livetv.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	log.Println("Server listen", binding)
+	log.Println("Server datadir", datadir)
+	logFile, err := os.OpenFile(datadir+"/livetv.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Panicln(err)
 	}
 	log.SetOutput(io.MultiWriter(os.Stderr, logFile))
-	err = global.InitDB(os.Getenv("LIVETV_DATADIR") + "/livetv.db")
+	err = global.InitDB(datadir + "/livetv.db")
 	if err != nil {
 		log.Panicf("init: %s\n", err)
 	}
@@ -68,7 +85,7 @@ func main() {
 	router.Static("/assert", "./assert")
 	route.Register(router)
 	srv := &http.Server{
-		Addr:    os.Getenv("LIVETV_LISTEN"),
+		Addr:    binding,
 		Handler: router,
 	}
 	go func() {
