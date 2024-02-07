@@ -309,6 +309,11 @@ func ChangePasswordHandler(c *gin.Context) {
 	}
 	pass := c.PostForm("password")
 	pass2 := c.PostForm("password2")
+	if pass == "" {
+		c.HTML(http.StatusOK, "error.html", gin.H{
+			"ErrMsg": "Empty password!",
+		})
+	}
 	if pass != pass2 {
 		c.HTML(http.StatusOK, "error.html", gin.H{
 			"ErrMsg": "Password mismatch!",
