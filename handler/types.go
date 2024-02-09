@@ -9,7 +9,7 @@ type Channel struct {
 }
 
 type Config struct {
-	BaseURL string
-	Cmd     string
-	Args    string
+	BaseURL string `json:"baseurl"`
+	Cmd     string `json:"cmd"`
+	Args    string `json:"args"`
 }

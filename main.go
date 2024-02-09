@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
@@ -85,8 +86,13 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	store := cookie.NewStore([]byte(sessionSecert))
+	/* CORS */
+	config := cors.DefaultConfig()
+	config.AllowOrigins = []string{"http://localhost:8000"}
+	config.AllowCredentials = true
+	router.Use(cors.New(config))
 	router.Use(sessions.Sessions("mysession", store))
-	router.Static("/assert", "./assert")
+	// router.Static("/", "./web")
 	route.Register(router)
 	srv := &http.Server{
 		Addr:    binding,

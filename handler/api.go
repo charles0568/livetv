@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -22,68 +23,23 @@ var langMatcher = language.NewMatcher([]language.Tag{
 })
 
 func IndexHandler(c *gin.Context) {
-	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
-	}
-	acceptLang := c.Request.Header.Get("Accept-Language")
-	langTag, _ := language.MatchStrings(langMatcher, acceptLang)
+	fullPath := filepath.Join("web", c.Param("path"))
 
-	baseUrl, err := service.GetConfig("base_url")
+	// Check if file exists
+	_, err := os.Stat(fullPath)
 	if err != nil {
-		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
-		return
-	}
-	channelModels, err := service.GetAllChannel()
-	if err != nil {
-		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
-		return
-	}
-	var m3uName string
-	if langTag == language.Chinese {
-		m3uName = "M3U 頻道列表"
-	} else {
-		m3uName = "M3U File"
-	}
-	channels := make([]Channel, len(channelModels)+1)
-	channels[0] = Channel{
-		ID:   0,
-		Name: m3uName,
-		M3U8: baseUrl + "/lives.m3u",
-	}
-	for i, v := range channelModels {
-		channels[i+1] = Channel{
-			ID:    v.ID,
-			Name:  v.Name,
-			URL:   v.URL,
-			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
-			Proxy: v.Proxy,
+		// Not found, serve index.html
+		if os.IsNotExist(err) {
+			indexPath := filepath.Join("web", "index.html")
+			c.File(indexPath)
+			return
 		}
-	}
-	conf, err := loadConfig()
-	if err != nil {
-		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		// Other error
+		c.String(http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
 
-	var templateFilename string
-	if langTag == language.Chinese {
-		templateFilename = "index.html" //"index-zh.html"
-	} else {
-		templateFilename = "index.html"
-	}
-	c.HTML(http.StatusOK, templateFilename, gin.H{
-		"Channels": channels,
-		"Configs":  conf,
-	})
+	c.File(fullPath)
 }
 
 func loadConfig() (Config, error) {
@@ -106,16 +62,66 @@ func loadConfig() (Config, error) {
 	return conf, nil
 }
 
+func CRSFHandler(c *gin.Context) {
+	session := sessions.Default(c)
+	// session.Options(sessions.Options{
+	// 	SameSite: http.SameSiteNoneMode,
+	// 	Secure:   true,
+	// })
+	crsfToken := util.RandString(10)
+	session.Set("crsfToken", crsfToken)
+	err := session.Save()
+	if err != nil {
+		c.AbortWithError(http.StatusInternalServerError, err)
+	} else {
+		c.Data(http.StatusOK, "text/plain", []byte(crsfToken))
+	}
+}
+
+func ChannelListHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	baseUrl, err := service.GetConfig("base_url")
+	if err != nil {
+		log.Println(err.Error())
+		c.String(http.StatusInternalServerError, "error: %s", err.Error())
+		return
+	}
+	channelModels, err := service.GetAllChannel()
+	if err != nil {
+		log.Println(err.Error())
+		c.String(http.StatusInternalServerError, "error: %s", err.Error())
+		return
+	}
+	channels := make([]Channel, len(channelModels)+1)
+	channels[0] = Channel{
+		ID:   0,
+		Name: "playlist",
+		M3U8: baseUrl + "/lives.m3u",
+	}
+	for i, v := range channelModels {
+		channels[i+1] = Channel{
+			ID:    v.ID,
+			Name:  v.Name,
+			URL:   v.URL,
+			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
+			Proxy: v.Proxy,
+		}
+	}
+	c.JSON(http.StatusOK, channels)
+}
+
 func NewChannelHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	if chName == "" || chURL == "" {
-		c.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"ErrMsg": "Incomplete channel info",
-		})
+		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
 	}
 	chProxy := c.PostForm("proxy") != ""
@@ -127,34 +133,37 @@ func NewChannelHandler(c *gin.Context) {
 	err := service.SaveChannel(mch)
 	if err != nil {
 		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Redirect(http.StatusFound, "/")
+	c.String(http.StatusOK, "")
+}
+
+func AuthProbeHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+	} else {
+		c.String(http.StatusOK, "")
+	}
 }
 
 func UpdateChannelHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	chID := util.String2Uint(c.PostForm("id"))
 	if chID == 0 {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": "empty id",
-		})
+		c.String(http.StatusInternalServerError, "empty id")
 		return
 	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	if chName == "" || chURL == "" {
-		c.HTML(http.StatusBadRequest, "error.html", gin.H{
-			"ErrMsg": "Incomplete channel info",
-		})
+		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
 	}
-	chProxy := c.PostForm("proxy") != ""
+	chProxy := c.PostForm("proxy") == "true"
 	mch := model.Channel{
 		ID:    chID,
 		Name:  chName,
@@ -164,39 +173,49 @@ func UpdateChannelHandler(c *gin.Context) {
 	err := service.SaveChannel(mch)
 	if err != nil {
 		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Redirect(http.StatusFound, "/")
+	c.String(http.StatusOK, "")
 }
 
 func DeleteChannelHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	chID := util.String2Uint(c.Query("id"))
 	if chID == 0 {
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": "empty id",
-		})
+		c.String(http.StatusInternalServerError, "empty id")
 		return
 	}
 	err := service.DeleteChannel(chID)
 	if err != nil {
 		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Redirect(http.StatusFound, "/")
+	c.String(http.StatusOK, "")
+}
+
+func GetConfigHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	conf, err := loadConfig()
+	if err != nil {
+		log.Println(err.Error())
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, conf)
 }
 
 func UpdateConfigHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	ytdlCmd := c.PostForm("cmd")
 	ytdlArgs := c.PostForm("args")
@@ -205,9 +224,7 @@ func UpdateConfigHandler(c *gin.Context) {
 		err := service.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
 			log.Println(err.Error())
-			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"ErrMsg": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
@@ -215,9 +232,7 @@ func UpdateConfigHandler(c *gin.Context) {
 		err := service.SetConfig("ytdl_args", ytdlArgs)
 		if err != nil {
 			log.Println(err.Error())
-			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"ErrMsg": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
@@ -225,18 +240,17 @@ func UpdateConfigHandler(c *gin.Context) {
 		err := service.SetConfig("base_url", baseUrl)
 		if err != nil {
 			log.Println(err.Error())
-			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"ErrMsg": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
-	c.Redirect(http.StatusFound, "/")
+	c.String(http.StatusOK, "")
 }
 
 func LogHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	c.File(os.Getenv("LIVETV_DATADIR") + "/livetv.log")
 }
@@ -247,7 +261,6 @@ func LoginViewHandler(c *gin.Context) {
 	session.Set("crsfToken", crsfToken)
 	err := session.Save()
 	if err != nil {
-		log.Println(err.Error())
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"ErrMsg": err.Error(),
 		})
@@ -260,20 +273,20 @@ func LoginViewHandler(c *gin.Context) {
 
 func LoginActionHandler(c *gin.Context) {
 	session := sessions.Default(c)
+	// session.Options(sessions.Options{
+	// 	SameSite: http.SameSiteNoneMode,
+	// 	Secure:   true,
+	// })
 	crsfToken := c.PostForm("crsf")
 	if crsfToken != session.Get("crsfToken") {
-		c.HTML(http.StatusOK, "error.html", gin.H{
-			"ErrMsg": "Password error!",
-		})
+		log.Println(crsfToken, session.Get("crsfToken"))
+		c.String(http.StatusBadRequest, "bad request")
 		return
 	}
 	pass := c.PostForm("password")
 	cfgPass, err := service.GetConfig("password")
 	if err != nil {
-		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	if pass == cfgPass {
@@ -281,58 +294,48 @@ func LoginActionHandler(c *gin.Context) {
 		err = session.Save()
 		if err != nil {
 			log.Println(err.Error())
-			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-				"ErrMsg": err.Error(),
-			})
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		c.Redirect(http.StatusFound, "/")
+		c.String(http.StatusOK, "ok")
 	} else {
-		c.HTML(http.StatusOK, "error.html", gin.H{
-			"ErrMsg": "Password error!",
-		})
+		c.String(http.StatusForbidden, "Password error!")
 	}
 }
 
 func LogoutHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusOK, "")
+		return
 	}
 	session := sessions.Default(c)
 	session.Delete("logined")
 	err := session.Save()
 	if err != nil {
 		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Redirect(http.StatusFound, "/login")
+	c.String(http.StatusOK, "")
 }
 
 func ChangePasswordHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
-		c.Redirect(http.StatusFound, "/login")
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	pass := c.PostForm("password")
 	pass2 := c.PostForm("password2")
 	if pass == "" {
-		c.HTML(http.StatusOK, "error.html", gin.H{
-			"ErrMsg": "Empty password!",
-		})
+		c.String(http.StatusBadRequest, "Empty password!")
 	}
 	if pass != pass2 {
-		c.HTML(http.StatusOK, "error.html", gin.H{
-			"ErrMsg": "Password mismatch!",
-		})
+		c.String(http.StatusBadRequest, "Password mismatch!")
 	}
 	err := service.SetConfig("password", pass)
 	if err != nil {
 		log.Println(err.Error())
-		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
-			"ErrMsg": err.Error(),
-		})
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 	LogoutHandler(c)
