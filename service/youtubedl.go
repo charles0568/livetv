@@ -50,7 +50,7 @@ func RealGetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 		if err == nil {
 			return output, err
 		} else {
-			return "", errors.Join(err, errors.New(output))
+			return "", errors.Join(errors.New(output+","), err)
 		}
 	}
 }
