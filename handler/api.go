@@ -361,3 +361,7 @@ func ChangePasswordHandler(c *gin.Context) {
 	}
 	LogoutHandler(c)
 }
+
+func init() {
+	mime.AddExtensionType(".ts", "video/mp2t")
+}
