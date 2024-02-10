@@ -28,7 +28,7 @@ func UpdateURLCacheSingle(Url string) (string, error) {
 		UpdateStatus(Url, Error, err.Error())
 	} else {
 		global.URLCache.Store(Url, liveURL)
-		UpdateStatus(Url, Ok, "Okay")
+		UpdateStatus(Url, Ok, "Live!")
 		log.Println(Url, "cached")
 	}
 	return liveURL, err
