@@ -18,7 +18,7 @@ func GetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 		liveURL, err := RealGetYoutubeLiveM3U8(youtubeURL)
 		if err != nil {
 			log.Println(err)
-			log.Println("[YTDL]",liveURL)
+			log.Println("[YTDL]", liveURL)
 			return "", err
 		} else {
 			global.URLCache.Store(youtubeURL, liveURL)
@@ -31,11 +31,13 @@ func RealGetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 	YtdlCmd, err := GetConfig("ytdl_cmd")
 	if err != nil {
 		log.Println(err)
+		UpdateStatus(youtubeURL, Error, err.Error())
 		return "", err
 	}
 	YtdlArgs, err := GetConfig("ytdl_args")
 	if err != nil {
 		log.Println(err)
+		UpdateStatus(youtubeURL, Error, err.Error())
 		return "", err
 	}
 	ytdlArgs := strings.Fields(YtdlArgs)
@@ -47,13 +49,19 @@ func RealGetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 	_, err = exec.LookPath(YtdlCmd)
 	if err != nil {
 		log.Println(err)
+		UpdateStatus(youtubeURL, Error, err.Error())
 		return "", err
 	} else {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), global.HttpClientTimeout)
 		defer cancelFunc()
-		log.Println(YtdlCmd, ytdlArgs)
 		cmd := exec.CommandContext(ctx, YtdlCmd, ytdlArgs...)
 		out, err := cmd.CombinedOutput()
-		return strings.TrimSpace(string(out)), err
+		output := strings.TrimSpace(string(out))
+		if err == nil {
+			UpdateStatus(youtubeURL, Ok, "Good")
+		} else {
+			UpdateStatus(youtubeURL, Error, err.Error())
+		}
+		return output, err
 	}
 }

@@ -1,7 +1,11 @@
 package handler
 
 import (
+	"embed"
+	"errors"
+	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,24 +26,35 @@ var langMatcher = language.NewMatcher([]language.Tag{
 	language.Chinese,
 })
 
+//go:embed web
+var webFS embed.FS
+
 func IndexHandler(c *gin.Context) {
-	fullPath := filepath.Join("web", c.Param("path"))
+	fullPath := strings.ReplaceAll(filepath.Join("web", c.Param("path")), "\\", "/")
 
 	// Check if file exists
-	_, err := os.Stat(fullPath)
+	f, err := webFS.Open(fullPath)
+	if f != nil {
+		fi, _ := f.Stat()
+		if fi.IsDir() {
+			err = errors.New("can't serve a folder")
+			f.Close()
+		}
+	}
 	if err != nil {
 		// Not found, serve index.html
-		if os.IsNotExist(err) {
-			indexPath := filepath.Join("web", "index.html")
-			c.File(indexPath)
-			return
-		}
-		// Other error
-		c.String(http.StatusInternalServerError, "Internal Server Error")
+		fullPath = strings.ReplaceAll(filepath.Join("web", "index.html"), "\\", "/")
+		f, err = webFS.Open(fullPath)
+	}
+
+	if err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.File(fullPath)
+	defer f.Close()
+	c.Writer.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(fullPath)))
+	io.Copy(c.Writer, f)
 }
 
 func loadConfig() (Config, error) {
@@ -102,12 +117,16 @@ func ChannelListHandler(c *gin.Context) {
 		M3U8: baseUrl + "/lives.m3u",
 	}
 	for i, v := range channelModels {
+		status := service.GetStatus(v.URL)
 		channels[i+1] = Channel{
-			ID:    v.ID,
-			Name:  v.Name,
-			URL:   v.URL,
-			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
-			Proxy: v.Proxy,
+			ID:         v.ID,
+			Name:       v.Name,
+			URL:        v.URL,
+			M3U8:       baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
+			Proxy:      v.Proxy,
+			LastUpdate: status.Time.Format("2006-01-02 15:04:05"),
+			Status:     status.Status,
+			Message:    status.Msg,
 		}
 	}
 	c.JSON(http.StatusOK, channels)

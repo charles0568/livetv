@@ -76,7 +76,7 @@ func LiveHandler(c *gin.Context) {
 			}
 			bodyString = string(bodyBytes)
 		} else {
-			log.Println("This is a video")
+			service.UpdateStatus(channelInfo.URL, service.Warning, "Url is not a live stream")
 			bodyString = "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:5.005,\n" + liveM3U8 // make a fake m3u8 pointing to the target
 		}
 		if channelInfo.Proxy {

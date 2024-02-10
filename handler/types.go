@@ -1,11 +1,14 @@
 package handler
 
 type Channel struct {
-	ID    uint
-	Name  string
-	URL   string
-	M3U8  string
-	Proxy bool
+	ID         uint
+	Name       string
+	URL        string
+	M3U8       string
+	Proxy      bool
+	LastUpdate string
+	Status     int
+	Message    string
 }
 
 type Config struct {
