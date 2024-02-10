@@ -156,7 +156,7 @@ func NewChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	service.UpdateURLCacheSingle(chURL) // update liveURL on adding new channel
+	go service.UpdateURLCacheSingle(chURL) // update liveURL on adding new channel
 }
 
 func AuthProbeHandler(c *gin.Context) {
@@ -197,7 +197,7 @@ func UpdateChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	service.UpdateURLCacheSingle(chURL) // update liveURL on updating new channel
+	go service.UpdateURLCacheSingle(chURL) // update liveURL on updating new channel
 }
 
 func DeleteChannelHandler(c *gin.Context) {
