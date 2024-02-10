@@ -57,7 +57,7 @@ func LiveHandler(c *gin.Context) {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)
 			// return a placeholder video
-			m3u8Body = "#EXTM3U\n#EXTINF:-1,\n" + baseUrl + "/placeholder.ts" // make a fake m3u8 pointing to the target
+			m3u8Body = "#EXTM3U\n#EXTINF:-1, placeholder\n" + baseUrl + "/placeholder.ts" // make a fake m3u8 pointing to the target
 		} else {
 			client := http.Client{Timeout: global.HttpClientTimeout}
 			resp, err := client.Get(liveM3U8)
@@ -79,7 +79,7 @@ func LiveHandler(c *gin.Context) {
 				bodyString = string(bodyBytes)
 			} else {
 				service.UpdateStatus(channelInfo.URL, service.Warning, "Url is not a live stream")
-				bodyString = "#EXTM3U\n#EXTINF:-1,\n" + liveM3U8 // make a fake m3u8 pointing to the target
+				bodyString = "#EXTM3U\n#EXTINF:-1, video\n" + liveM3U8 // make a fake m3u8 pointing to the target
 			}
 			if channelInfo.Proxy {
 				m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
