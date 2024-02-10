@@ -55,36 +55,39 @@ func LiveHandler(c *gin.Context) {
 		liveM3U8, err := service.GetYoutubeLiveM3U8(channelInfo.URL)
 		if err != nil {
 			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-		client := http.Client{Timeout: global.HttpClientTimeout}
-		resp, err := client.Get(liveM3U8)
-		if err != nil {
-			log.Println(err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-		defer resp.Body.Close()
-		bodyString := ""
-		if strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
-			bodyBytes, err := ioutil.ReadAll(resp.Body)
+			// c.AbortWithStatus(http.StatusInternalServerError)
+			// return a placeholder video
+			m3u8Body = "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:5.005,\n" + baseUrl + "/placeholder.ts" // make a fake m3u8 pointing to the target
+		} else {
+			client := http.Client{Timeout: global.HttpClientTimeout}
+			resp, err := client.Get(liveM3U8)
 			if err != nil {
 				log.Println(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			bodyString = string(bodyBytes)
-		} else {
-			service.UpdateStatus(channelInfo.URL, service.Warning, "Url is not a live stream")
-			bodyString = "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:5.005,\n" + liveM3U8 // make a fake m3u8 pointing to the target
+
+			bodyString := ""
+			defer resp.Body.Close()
+			if strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
+				bodyBytes, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Println(err)
+					c.AbortWithStatus(http.StatusInternalServerError)
+					return
+				}
+				bodyString = string(bodyBytes)
+			} else {
+				service.UpdateStatus(channelInfo.URL, service.Warning, "Url is not a live stream")
+				bodyString = "#EXTM3U\n#EXT-X-VERSION:3\n#EXTINF:5.005,\n" + liveM3U8 // make a fake m3u8 pointing to the target
+			}
+			if channelInfo.Proxy {
+				m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
+			} else {
+				m3u8Body = bodyString
+			}
+			global.M3U8Cache.Set(channelCacheKey, m3u8Body, 3*time.Second)
 		}
-		if channelInfo.Proxy {
-			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
-		} else {
-			m3u8Body = bodyString
-		}
-		global.M3U8Cache.Set(channelCacheKey, m3u8Body, 3*time.Second)
 	}
 	c.Data(http.StatusOK, "application/vnd.apple.mpegurl", []byte(m3u8Body))
 }
