@@ -58,9 +58,9 @@ func RealGetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 		out, err := cmd.CombinedOutput()
 		output := strings.TrimSpace(string(out))
 		if err == nil {
-			UpdateStatus(youtubeURL, Ok, "Good")
+			UpdateStatus(youtubeURL, Ok, "Ready")
 		} else {
-			UpdateStatus(youtubeURL, Error, err.Error())
+			UpdateStatus(youtubeURL, Error, output)
 		}
 		return output, err
 	}

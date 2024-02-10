@@ -20,7 +20,6 @@ func LoadChannelCache() {
 		liveURL, err := RealGetYoutubeLiveM3U8(v.URL)
 		if err != nil {
 			log.Println(err)
-			return
 		}
 		global.URLCache.Store(v.URL, liveURL)
 		log.Println(v.URL, "cached")
