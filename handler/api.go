@@ -53,11 +53,11 @@ func IndexHandler(c *gin.Context) {
 	}
 
 	defer f.Close()
-	//c.Writer.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(fullPath)))
-	data, _ := io.ReadAll(f)
-	c.Writer.Header().Set("Content-Length", strconv.Itoa(len(data)))
-	c.Data(http.StatusOK, mime.TypeByExtension(filepath.Ext(fullPath)), data)
-	// io.Copy(c.Writer, f)
+	c.Writer.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(fullPath)))
+	// data, _ := io.ReadAll(f)
+	// c.Writer.Header().Set("Content-Length", strconv.Itoa(len(data)))
+	// c.Data(http.StatusOK, mime.TypeByExtension(filepath.Ext(fullPath)), data)
+	io.Copy(c.Writer, f)
 }
 
 func loadConfig() (Config, error) {
