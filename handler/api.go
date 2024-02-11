@@ -74,6 +74,11 @@ func loadConfig() (Config, error) {
 	} else {
 		conf.BaseURL = burl
 	}
+	if apiKey, err := service.GetConfig("apiKey"); err != nil {
+		return conf, err
+	} else {
+		conf.ApiKey = apiKey
+	}
 	return conf, nil
 }
 
@@ -241,6 +246,7 @@ func UpdateConfigHandler(c *gin.Context) {
 	ytdlCmd := c.PostForm("cmd")
 	ytdlArgs := c.PostForm("args")
 	baseUrl := strings.TrimSuffix(c.PostForm("baseurl"), "/")
+	apiKey := strings.TrimSpace(c.PostForm("apikey"))
 	if len(ytdlCmd) > 0 {
 		err := service.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
@@ -265,6 +271,7 @@ func UpdateConfigHandler(c *gin.Context) {
 			return
 		}
 	}
+	service.SetConfig("apiKey", apiKey)
 	c.String(http.StatusOK, "")
 }
 

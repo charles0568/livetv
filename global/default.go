@@ -12,6 +12,7 @@ var defaultConfigValue = map[string]string{
 	"ytdl_args": "--extractor-args youtube:skip=dash -f b -g {url}",
 	"base_url":  "http://127.0.0.1:9000",
 	"password":  "password",
+	"apiKey":    "",
 }
 
 var (
