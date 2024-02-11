@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 	"time"
 
@@ -112,15 +114,16 @@ func TsProxyHandler(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	client := http.Client{Timeout: global.HttpClientTimeout}
-	resp, err := client.Get(remoteURL)
+	rurl, err := url.Parse(remoteURL)
 	if err != nil {
-		log.Println(err)
-		c.AbortWithStatus(http.StatusInternalServerError)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	defer resp.Body.Close()
-	c.DataFromReader(http.StatusOK, resp.ContentLength, resp.Header.Get("Content-Type"), resp.Body, nil)
+	// Create a reverse proxy
+	proxy := httputil.NewSingleHostReverseProxy(rurl)
+
+	// Serve the request using the reverse proxy
+	proxy.ServeHTTP(c.Writer, c.Request)
 }
 
 func CacheHandler(c *gin.Context) {
