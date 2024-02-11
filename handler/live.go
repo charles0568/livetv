@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -116,14 +117,26 @@ func TsProxyHandler(c *gin.Context) {
 	}
 	rurl, err := url.Parse(remoteURL)
 	if err != nil {
-		c.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusBadRequest, err)
+	}
+
+	client := http.Client{Timeout: global.HttpClientTimeout}
+	req := c.Request.Clone(context.Background())
+	req.URL = rurl
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-	// Create a reverse proxy
-	proxy := httputil.NewSingleHostReverseProxy(rurl)
-
-	// Serve the request using the reverse proxy
-	proxy.ServeHTTP(c.Writer, c.Request)
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Writer.Header().Add(key, value)
+		}
+	}
+	defer resp.Body.Close()
+	c.Writer.WriteHeader(resp.StatusCode)
+	io.Copy(c.Writer, resp.Body)
 }
 
 func CacheHandler(c *gin.Context) {
