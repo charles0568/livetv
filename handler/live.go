@@ -122,6 +122,7 @@ func TsProxyHandler(c *gin.Context) {
 
 	client := http.Client{Timeout: global.HttpClientTimeout}
 	req := c.Request.Clone(context.Background())
+	req.RequestURI = ""
 	req.URL = rurl
 	resp, err := client.Do(req)
 	if err != nil {
