@@ -86,7 +86,7 @@ func LiveHandler(c *gin.Context) {
 				duration, err := service.GetVideoDuration(channelInfo.URL)
 				if err == nil && duration > 0 {
 					log.Println(channelInfo.URL, "duration is", duration)
-					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n#EXT-X-ENDLIST", duration, duration, liveM3U8)
+					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n", duration, duration, liveM3U8)
 				} else {
 					log.Println("failed to get duration", err.Error())
 					bodyString = "#EXTM3U\n#EXTINF:-1, video\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
