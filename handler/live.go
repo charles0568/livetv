@@ -61,7 +61,7 @@ func LiveHandler(c *gin.Context) {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)
 			// return a placeholder video
-			m3u8Body = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:10.000000,\n" + baseUrl + "/placeholder.ts\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
+			m3u8Body = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:60\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:60.000000,\n" + baseUrl + "/placeholder.ts\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 		} else {
 			client := http.Client{Timeout: global.HttpClientTimeout}
 			resp, err := client.Get(liveM3U8)
