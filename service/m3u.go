@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -20,9 +21,8 @@ func M3UGenerate() (string, error) {
 	var m3u strings.Builder
 	m3u.WriteString("#EXTM3U\n")
 	for _, v := range channels {
-		m3u.WriteString("#EXTINF:-1,")
-		m3u.WriteString(v.Name)
-		m3u.WriteString("\n")
+		liveData := fmt.Sprintf("#EXTINF:-1, tvg-name=\"%s\" group-title=\"LiveTV\", %s\n", v.Name, v.Name)
+		m3u.WriteString(liveData)
 		m3u.WriteString(baseUrl)
 		m3u.WriteString("/live.m3u8?c=")
 		m3u.WriteString(strconv.Itoa(int(v.ID)))
