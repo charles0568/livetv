@@ -6,6 +6,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/zjyl1994/livetv/global"
 )
@@ -16,7 +17,12 @@ func GetYoutubeLiveM3U8(youtubeURL string) (string, error) {
 		return liveURL.(string), nil
 	} else {
 		log.Println("cache miss", youtubeURL)
-		return UpdateURLCacheSingle(youtubeURL)
+		status := GetStatus(youtubeURL)
+		if time.Now().Sub(status.Time) > time.Minute*2 {
+			return UpdateURLCacheSingle(youtubeURL)
+		} else {
+			return "", errors.New("parser cooling down")
+		}
 	}
 }
 
