@@ -89,7 +89,7 @@ func LiveHandler(c *gin.Context) {
 					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-PLAYLIST-TYPE: VOD\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n#EXT-X-ENDLIST", duration, duration, liveM3U8)
 				} else {
 					log.Println("failed to get duration", err.Error())
-					bodyString = "#EXTM3U\n#EXTINF:-1, video\nEXT-X-PLAYLIST-TYPE: VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
+					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE: VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 				}
 			}
 			if channelInfo.Proxy {
