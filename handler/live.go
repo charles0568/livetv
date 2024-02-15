@@ -61,7 +61,7 @@ func LiveHandler(c *gin.Context) {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)
 			// return a placeholder video
-			m3u8Body = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:60\n#EXTINF:60.000000,\n" + baseUrl + "/placeholder.ts\n" // make a fake m3u8 pointing to the target
+			m3u8Body = service.PlaceHolderHLS() // make a fake m3u8 pointing to the target
 		} else {
 			client := http.Client{Timeout: global.HttpClientTimeout}
 			resp, err := client.Get(liveM3U8)
@@ -86,10 +86,10 @@ func LiveHandler(c *gin.Context) {
 				duration, err := service.GetVideoDuration(channelInfo.URL)
 				if err == nil && duration > 0 {
 					log.Println(channelInfo.URL, "duration is", duration)
-					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-PLAYLIST-TYPE: VOD\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n#EXT-X-ENDLIST", duration, duration, liveM3U8)
+					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n#EXT-X-ENDLIST", duration, duration, liveM3U8)
 				} else {
 					log.Println("failed to get duration", err.Error())
-					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE: VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
+					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE:VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 				}
 			}
 			if channelInfo.Proxy {
