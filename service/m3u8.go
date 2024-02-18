@@ -9,8 +9,10 @@ import (
 	"github.com/zjyl1994/livetv/util"
 )
 
+var startUp int64 = 0
+
 func PlaceHolderHLS() string {
-	t := time.Now().Unix() / 60 % 100000
+	t := (time.Now().Unix() - startUp) / 60
 	baseUrl, _ := GetConfig("base_url")
 	if !strings.HasSuffix(baseUrl, "/") {
 		baseUrl += "/"
@@ -28,7 +30,7 @@ func PlaceHolderHLS() string {
 #EXTINF:60.000000,
 %s?t=%d
 `
-	return fmt.Sprintf(tpl, t%10000, placeholder, (t-1)%10000, placeholder, t%10000, placeholder, (t+1)%10000)
+	return fmt.Sprintf(tpl, t, placeholder, t-1, placeholder, t, placeholder, t+1)
 }
 
 func M3U8Process(data string, prefixURL string) string {
@@ -45,4 +47,8 @@ func M3U8Process(data string, prefixURL string) string {
 		sb.WriteString("\n")
 	}
 	return sb.String()
+}
+
+func init() {
+	startUp = time.Now().Unix()
 }

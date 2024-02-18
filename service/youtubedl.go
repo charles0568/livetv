@@ -76,7 +76,6 @@ func bestFromMasterPlaylist(masterUrl string) (string, error) {
 }
 
 // inspired by https://github.com/abskmj/youtube-hls-m3u8
-
 func DoGetYoutubeLiveM3U8Internal(youtubeURL string) (string, string, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
