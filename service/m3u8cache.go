@@ -20,18 +20,21 @@ func LoadChannelCache() {
 	}
 }
 
-func UpdateURLCacheSingle(Url string) (string, error) {
+func UpdateURLCacheSingle(Url string) (string, string, error) {
 	log.Println("caching", Url)
-	liveURL, err := RealGetYoutubeLiveM3U8(Url)
+	liveURL, logo, err := RealGetYoutubeLiveM3U8(Url)
 	if err != nil {
 		log.Println("[YTDL]", err)
 		UpdateStatus(Url, Error, err.Error())
 	} else {
 		global.URLCache.Store(Url, liveURL)
+		if logo != "" {
+			global.LogoCache.Store(Url, logo)
+		}
 		UpdateStatus(Url, Ok, "Live!")
 		log.Println(Url, "cached")
 	}
-	return liveURL, err
+	return liveURL, logo, err
 }
 
 func UpdateURLCache() {

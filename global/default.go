@@ -19,5 +19,6 @@ var (
 	HttpClientTimeout = 30 * time.Second
 	ConfigCache       sync.Map
 	URLCache          sync.Map
+	LogoCache         sync.Map
 	M3U8Cache         = cache.New(3*time.Second, 10*time.Second)
 )
