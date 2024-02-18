@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dlclark/regexp2"
+	"github.com/grafov/m3u8"
 	"github.com/zjyl1994/livetv/global"
 )
 
@@ -36,6 +37,44 @@ func GetYoutubeLiveM3U8(youtubeURL string) (string, string, error) {
 	}
 }
 
+func bestFromMasterPlaylist(masterUrl string) (string, error) {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+	resp, err := client.Get(masterUrl)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
+		return "", errors.New("invalid url")
+	}
+	p, listType, err := m3u8.DecodeFrom(resp.Body, true)
+	if err != nil {
+		return "", err
+	}
+	switch listType {
+	case m3u8.MEDIA:
+		{
+			return masterUrl, nil
+		}
+	case m3u8.MASTER:
+		{
+			masterpl := p.(*m3u8.MasterPlaylist)
+			selectedUrl := ""
+			selectedBw := uint32(0)
+			for _, v := range masterpl.Variants {
+				if v.Bandwidth >= selectedBw {
+					selectedUrl = v.URI
+					selectedBw = v.Bandwidth
+				}
+			}
+			return selectedUrl, nil
+		}
+	}
+	return "", errors.New("Unknown type of playlist")
+}
+
 // inspired by https://github.com/abskmj/youtube-hls-m3u8
 
 func DoGetYoutubeLiveM3U8Internal(youtubeURL string) (string, string, error) {
@@ -57,7 +96,12 @@ func DoGetYoutubeLiveM3U8Internal(youtubeURL string) (string, string, error) {
 	matches, _ := regex.FindStringMatch(scontent)
 	if matches != nil {
 		gps := matches.Groups()
-		liveUrl := gps[0].Captures[0].String()
+		liveMasterUrl := gps[0].Captures[0].String()
+		liveUrl, err := bestFromMasterPlaylist(liveMasterUrl) // extract the best quality live url from the master playlist
+		if err != nil {
+			return "", "", err
+		}
+
 		logo := ""
 		logoexp := regexp2.MustCompile(`(?<=owner":{"videoOwnerRenderer":{"thumbnail":{"thumbnails":\[{"url":")[^=]*`, 0)
 		logomatches, _ := logoexp.FindStringMatch(scontent)

@@ -73,7 +73,7 @@ func LiveHandler(c *gin.Context) {
 
 			bodyString := ""
 			defer resp.Body.Close()
-			if strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
+			if resp.ContentLength < 10*1024*1024 && strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
 				bodyBytes, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					log.Println(err)
