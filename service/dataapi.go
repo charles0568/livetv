@@ -57,7 +57,7 @@ func GetManifestHLS(vid string) (string, error) {
 }
 */
 
-func GetChannelLiveStream(channelName string) {
+func GetChannelLiveStream(channelName string) (string, error) {
 	service, err := getYoutubeService()
 	if err != nil {
 		return "", err
@@ -67,7 +67,7 @@ func GetChannelLiveStream(channelName string) {
 		return "", err
 	}
 	if len(response.Items) > 0 {
-		return response.Items[0].Id.VideoId
+		return response.Items[0].Id.VideoId, nil
 	}
 	return "", errors.New("This channel is not currently live")
 }
