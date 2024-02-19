@@ -8,6 +8,7 @@ import (
 func Register(r *gin.Engine) {
 	r.GET("/lives.m3u", handler.M3UHandler)
 	r.GET("/live.m3u8", handler.LiveHandler)
+	r.HEAD("/live.m3u8", handler.LivePreHandler)
 	r.GET("/live.ts", handler.TsProxyHandler)
 	r.GET("/cache.txt", handler.CacheHandler)
 

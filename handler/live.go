@@ -28,6 +28,25 @@ func M3UHandler(c *gin.Context) {
 	c.Data(http.StatusOK, "application/vnd.apple.mpegurl", []byte(content))
 }
 
+func LivePreHandler(c *gin.Context) {
+	channelNumber := util.String2Uint(c.Query("c"))
+	if channelNumber == 0 {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	_, err := service.GetChannel(channelNumber)
+	if err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			c.AbortWithStatus(http.StatusNotFound)
+		} else {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+		return
+	}
+	c.Data(http.StatusOK, "application/vnd.apple.mpegurl", []byte(nil))
+}
+
 func LiveHandler(c *gin.Context) {
 	var m3u8Body string
 	channelCacheKey := c.Query("c")
