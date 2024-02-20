@@ -2,6 +2,8 @@ package service
 
 import (
 	"time"
+
+	"github.com/zjyl1994/livetv/syncx"
 )
 
 type StatusInfo struct {
@@ -18,7 +20,7 @@ const (
 	Expired
 )
 
-var statusCache *Map[any, *StatusInfo] = new(Map[any, *StatusInfo])
+var statusCache syncx.Map[any, *StatusInfo]
 
 func UpdateStatus(url any, status int, msg string) {
 	if c, ok := statusCache.Load(url); ok {

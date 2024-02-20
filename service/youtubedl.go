@@ -7,25 +7,48 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/dlclark/regexp2"
 	"github.com/grafov/m3u8"
 	"github.com/zjyl1994/livetv/global"
+	"github.com/zjyl1994/livetv/util"
 )
 
-var errNoMatchFound error = errors.New("No live feed found")
+var errNoMatchFound error = errors.New("This channel is not currently live")
+
+func checkAndUpdateExpiringM3U8(youtubeURL string, liveURL string) (expired bool) {
+	regex := regexp.MustCompile(`/expire/(\d+)/`)
+	matched := regex.FindStringSubmatch(liveURL)
+	if len(matched) < 2 {
+		return false
+	}
+	expireTime := time.Unix(util.String2Int64(matched[1]), 0)
+	if time.Now().After(expireTime) { // already expired, update before replying to clients
+		global.URLCache.Delete(youtubeURL)
+		UpdateURLCacheSingle(youtubeURL)
+		return true
+	} else if time.Now().Add(time.Second * 180).After(expireTime) {
+		go UpdateURLCacheSingle(youtubeURL) // update async
+	}
+	return false
+}
 
 func GetYoutubeLiveM3U8(youtubeURL string) (string, string, error) {
 	liveURL, ok := global.URLCache.Load(youtubeURL)
-	logoX, logoOk := global.LogoCache.Load(youtubeURL)
+	logo, _ := global.LogoCache.Load(youtubeURL)
 	if ok {
-		logo := ""
-		if logoOk {
-			logo = logoX.(string)
+		// check and refresh expired/expiring feed
+		if checkAndUpdateExpiringM3U8(youtubeURL, liveURL) {
+			// expired link, should load liveUrl again
+			liveURL, ok = global.URLCache.Load(youtubeURL)
+			if !ok {
+				return "", "", errNoMatchFound
+			}
 		}
-		return liveURL.(string), logo, nil
+		return liveURL, logo, nil
 	} else {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)

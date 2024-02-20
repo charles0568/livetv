@@ -1,10 +1,10 @@
 package global
 
 import (
-	"sync"
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/zjyl1994/livetv/syncx"
 )
 
 var defaultConfigValue = map[string]string{
@@ -17,8 +17,8 @@ var defaultConfigValue = map[string]string{
 
 var (
 	HttpClientTimeout = 30 * time.Second
-	ConfigCache       sync.Map
-	URLCache          sync.Map
-	LogoCache         sync.Map
+	ConfigCache       syncx.Map[string, string]
+	URLCache          syncx.Map[string, string]
+	LogoCache         syncx.Map[string, string]
 	M3U8Cache         = cache.New(3*time.Second, 10*time.Second)
 )

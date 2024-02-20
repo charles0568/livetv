@@ -25,7 +25,7 @@ func M3UGenerate() (string, error) {
 	for _, v := range channels {
 		logo := ""
 		if _logo, ok := global.LogoCache.Load(v.URL); ok {
-			logo = _logo.(string)
+			logo = _logo
 		}
 		liveData := fmt.Sprintf("#EXTINF:-1, tvg-name=%s tvg-logo=%s group-title=\"LiveTV\", %s\n", strconv.Quote(v.Name), strconv.Quote(logo), v.Name)
 		m3u.WriteString(liveData)

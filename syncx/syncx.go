@@ -1,4 +1,4 @@
-package service
+package syncx
 
 import "sync"
 

@@ -8,7 +8,7 @@ import (
 
 func GetConfig(key string) (string, error) {
 	if confValue, ok := global.ConfigCache.Load(key); ok {
-		return confValue.(string), nil
+		return confValue, nil
 	} else {
 		var value model.Config
 		err := global.DB.Where("name = ?", key).First(&value).Error

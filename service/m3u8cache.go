@@ -43,8 +43,7 @@ func UpdateURLCache() {
 		log.Println(err)
 		return
 	}
-	global.URLCache.Range(func(k, v interface{}) bool {
-		value := v.(string)
+	global.URLCache.Range(func(k, value string) bool {
 		regex := regexp.MustCompile(`/expire/(\d+)/`)
 		matched := regex.FindStringSubmatch(value)
 		if len(matched) < 2 {

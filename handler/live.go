@@ -162,10 +162,10 @@ func TsProxyHandler(c *gin.Context) {
 
 func CacheHandler(c *gin.Context) {
 	var sb strings.Builder
-	global.URLCache.Range(func(k, v interface{}) bool {
-		sb.WriteString(k.(string))
+	global.URLCache.Range(func(k, v string) bool {
+		sb.WriteString(k)
 		sb.WriteString(" => ")
-		sb.WriteString(v.(string))
+		sb.WriteString(v)
 		sb.WriteString("\n")
 		return true
 	})
