@@ -30,7 +30,7 @@ func checkAndUpdateExpiringM3U8(youtubeURL string, liveURL string) (expired bool
 		global.URLCache.Delete(youtubeURL)
 		UpdateURLCacheSingle(youtubeURL)
 		return true
-	} else if time.Now().Add(time.Second * 180).After(expireTime) {
+	} else if time.Now().Add(time.Minute * 6).After(expireTime) {
 		go UpdateURLCacheSingle(youtubeURL) // update async
 	}
 	return false

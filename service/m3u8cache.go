@@ -9,6 +9,8 @@ import (
 	"github.com/zjyl1994/livetv/util"
 )
 
+var updateConcurrent = make(chan bool, 2) // allow up to 2 urls to be updated simultaneously
+
 func LoadChannelCache() {
 	channels, err := GetAllChannel()
 	if err != nil {
@@ -21,6 +23,10 @@ func LoadChannelCache() {
 }
 
 func UpdateURLCacheSingle(Url string) (string, string, error) {
+	updateConcurrent <- true
+	defer func() {
+		<-updateConcurrent
+	}()
 	log.Println("caching", Url)
 	liveURL, logo, err := RealGetYoutubeLiveM3U8(Url)
 	if err != nil {
@@ -52,7 +58,7 @@ func UpdateURLCache() {
 			return true
 		}
 		expireTime := time.Unix(util.String2Int64(matched[1]), 0)
-		if time.Now().After(expireTime) {
+		if time.Now().Add(time.Hour * 4).After(expireTime) {
 			global.URLCache.Delete(k)
 			DeleteStatus(k)
 		}
