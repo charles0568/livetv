@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -19,6 +20,8 @@ import (
 )
 
 var errNoMatchFound error = errors.New("This channel is not currently live")
+
+const DefaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
 func checkAndUpdateExpiringM3U8(youtubeURL string, liveURL string) (expired bool) {
 	regex := regexp.MustCompile(`/expire/(\d+)/`)
@@ -61,15 +64,17 @@ func GetYoutubeLiveM3U8(youtubeURL string) (string, string, error) {
 	}
 }
 
-func getBaseURL(sUrl string) string {
-	u, err := url.Parse(sUrl)
+func getBaseURL(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
-		return "" // handle error or return default value
+		return ""
 	}
-	u.Path = ""     // remove path
-	u.RawQuery = "" // remove query string
-	u.Fragment = "" // remove fragment
-	return u.String()
+
+	// Remove the last element (document) from the path
+	parsedURL.Path = path.Dir(parsedURL.Path) + "/"
+
+	// Rebuild the URL without the document part
+	return parsedURL.String()
 }
 
 func isValidURL(u string) bool {
@@ -77,19 +82,27 @@ func isValidURL(u string) bool {
 	return err == nil
 }
 
-func bestFromMasterPlaylist(masterUrl string) (string, error) {
-	client := http.Client{
-		Timeout: time.Second * 10,
+func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, error) {
+	var playlist io.Reader
+	if len(content) > 0 {
+		playlist = content[0]
+	} else {
+		client := http.Client{
+			Timeout: time.Second * 10,
+		}
+		req, err := http.NewRequest("GET", masterUrl, nil)
+		req.Header.Set("User-Agent", DefaultUserAgent)
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+		if resp.ContentLength > 10*1024*1024 || !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
+			return "", errors.New("invalid url")
+		}
+		playlist = resp.Body
 	}
-	resp, err := client.Get(masterUrl)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "mpegurl") {
-		return "", errors.New("invalid url")
-	}
-	p, listType, err := m3u8.DecodeFrom(resp.Body, true)
+	p, listType, err := m3u8.DecodeFrom(playlist, true)
 	if err != nil {
 		return "", err
 	}
@@ -120,20 +133,22 @@ func DoGetYoutubeLiveM3U8Internal(youtubeURL string) (string, string, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
-	resp, err := client.Get(youtubeURL)
+	req, err := http.NewRequest("GET", youtubeURL, nil)
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", "", err
 	}
 
 	defer resp.Body.Close()
 	// the link itself is a valid M3U8
-	if strings.Contains(resp.Header.Get("Content-Type"), "mpegURL") {
-		liveMasterUrl := youtubeURL
-		if !isValidURL(liveMasterUrl) {
-			liveMasterUrl = getBaseURL(youtubeURL) + liveMasterUrl
-		}
-		liveUrl, err := bestFromMasterPlaylist(youtubeURL) // extract the best quality live url from the master playlist
+	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
+		log.Println(youtubeURL, "is a master url")
+		liveUrl, err := bestFromMasterPlaylist(youtubeURL, resp.Body) // extract the best quality live url from the master playlist
 		if err == nil {
+			if !isValidURL(liveUrl) {
+				liveUrl = getBaseURL(youtubeURL) + liveUrl
+			}
 			return liveUrl, "", nil
 		}
 	}
