@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -60,6 +61,22 @@ func GetYoutubeLiveM3U8(youtubeURL string) (string, string, error) {
 	}
 }
 
+func getBaseURL(sUrl string) string {
+	u, err := url.Parse(sUrl)
+	if err != nil {
+		return "" // handle error or return default value
+	}
+	u.Path = ""     // remove path
+	u.RawQuery = "" // remove query string
+	u.Fragment = "" // remove fragment
+	return u.String()
+}
+
+func isValidURL(u string) bool {
+	_, err := url.ParseRequestURI(u)
+	return err == nil
+}
+
 func bestFromMasterPlaylist(masterUrl string) (string, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
@@ -109,6 +126,18 @@ func DoGetYoutubeLiveM3U8Internal(youtubeURL string) (string, string, error) {
 	}
 
 	defer resp.Body.Close()
+	// the link itself is a valid M3U8
+	if strings.Contains(resp.Header.Get("Content-Type"), "mpegURL") {
+		liveMasterUrl := youtubeURL
+		if !isValidURL(liveMasterUrl) {
+			liveMasterUrl = getBaseURL(youtubeURL) + liveMasterUrl
+		}
+		liveUrl, err := bestFromMasterPlaylist(youtubeURL) // extract the best quality live url from the master playlist
+		if err == nil {
+			return liveUrl, "", nil
+		}
+	}
+	// DO not parse invalid response, parse HTML only
 	if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "html") {
 		return "", "", errors.New("invalid url")
 	}

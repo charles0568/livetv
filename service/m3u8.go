@@ -33,15 +33,19 @@ func PlaceHolderHLS() string {
 	return fmt.Sprintf(tpl, t, placeholder, t-1, placeholder, t, placeholder, t+1)
 }
 
-func M3U8Process(data string, prefixURL string) string {
+func M3U8Process(playlistUrl string, data string, prefixURL string) string {
 	var sb strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(data))
+	baseUrl := getBaseURL(playlistUrl)
 	for scanner.Scan() {
 		l := scanner.Text()
 		if strings.HasPrefix(l, "#") {
 			sb.WriteString(l)
 		} else {
 			sb.WriteString(prefixURL)
+			if !isValidURL(l) {
+				l = baseUrl + l
+			}
 			sb.WriteString(util.CompressString(l))
 		}
 		sb.WriteString("\n")

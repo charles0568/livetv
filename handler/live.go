@@ -112,7 +112,7 @@ func LiveHandler(c *gin.Context) {
 				}
 			}
 			if channelInfo.Proxy {
-				m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
+				m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
 			} else {
 				m3u8Body = bodyString
 			}
