@@ -36,6 +36,7 @@ func getBaseURL(rawURL string) string {
 	if err != nil {
 		return ""
 	}
+	parsedURL.RawQuery = ""
 
 	// Remove the last element (document) from the path
 	parsedURL.Path = path.Dir(parsedURL.Path) + "/"
@@ -88,6 +89,9 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 					selectedUrl = v.URI
 					selectedBw = v.Bandwidth
 				}
+			}
+			if !isValidURL(selectedUrl) {
+				selectedUrl = getBaseURL(masterUrl) + selectedUrl
 			}
 			return selectedUrl, nil
 		}

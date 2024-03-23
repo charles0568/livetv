@@ -51,10 +51,6 @@ func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
 			liveUrl, err := bestFromMasterPlaylist(ftvresp.VideoURL)
 			log.Println("best url:", liveUrl)
 			if err == nil {
-				if !isValidURL(liveUrl) {
-					liveUrl = getBaseURL(liveUrl) + liveUrl
-				}
-				log.Println("final url", liveUrl)
 				return liveUrl, "", nil
 			}
 			return "", "", err
