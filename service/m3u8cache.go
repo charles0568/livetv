@@ -18,17 +18,17 @@ func LoadChannelCache() {
 		return
 	}
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL)
+		UpdateURLCacheSingle(v.URL, v.Parser)
 	}
 }
 
-func UpdateURLCacheSingle(Url string) (string, string, error) {
+func UpdateURLCacheSingle(Url string, Parser string) (string, string, error) {
 	updateConcurrent <- true
 	defer func() {
 		<-updateConcurrent
 	}()
 	log.Println("caching", Url)
-	liveURL, logo, err := RealGetYoutubeLiveM3U8(Url)
+	liveURL, logo, err := RealLiveM3U8(Url, Parser)
 	if err != nil {
 		log.Println("[YTDL]", err)
 		UpdateStatus(Url, Error, err.Error())
@@ -65,6 +65,6 @@ func UpdateURLCache() {
 		return true
 	})
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL)
+		UpdateURLCacheSingle(v.URL, v.Parser)
 	}
 }

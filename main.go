@@ -44,7 +44,7 @@ func main() {
 		if err != nil {
 			log.Panicf("init: %s\n", err)
 		}
-		err = service.SetConfig("password", *pwd)
+		err = global.SetConfig("password", *pwd)
 		if err == nil {
 			log.Println("Password has been changed.")
 		} else {
@@ -78,7 +78,7 @@ func main() {
 		log.Panicf("preloadCron: %s\n", err)
 	}
 	c.Start()
-	sessionSecert, err := service.GetConfig("password")
+	sessionSecert, err := global.GetConfig("password")
 	if err != nil {
 		sessionSecert = "sessionSecert"
 	}

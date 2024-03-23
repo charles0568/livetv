@@ -69,13 +69,13 @@ func LiveHandler(c *gin.Context) {
 			}
 			return
 		}
-		baseUrl, err := service.GetConfig("base_url")
+		baseUrl, err := global.GetConfig("base_url")
 		if err != nil {
 			log.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
-		liveM3U8, _, err := service.GetYoutubeLiveM3U8(channelInfo.URL)
+		liveM3U8, _, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.Parser)
 		if err != nil {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/util"
 )
 
@@ -13,7 +14,7 @@ var startUp int64 = 0
 
 func PlaceHolderHLS() string {
 	t := (time.Now().Unix() - startUp) / 60
-	baseUrl, _ := GetConfig("base_url")
+	baseUrl, _ := global.GetConfig("base_url")
 	if !strings.HasSuffix(baseUrl, "/") {
 		baseUrl += "/"
 	}

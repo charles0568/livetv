@@ -10,7 +10,7 @@ import (
 )
 
 func M3UGenerate() (string, error) {
-	baseUrl, err := GetConfig("base_url")
+	baseUrl, err := global.GetConfig("base_url")
 	if err != nil {
 		log.Println(err)
 		return "", err

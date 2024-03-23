@@ -14,7 +14,9 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/model"
+	"github.com/zjyl1994/livetv/plugin"
 	"github.com/zjyl1994/livetv/service"
 	"github.com/zjyl1994/livetv/util"
 
@@ -59,22 +61,22 @@ func IndexHandler(c *gin.Context) {
 
 func loadConfig() (Config, error) {
 	var conf Config
-	if cmd, err := service.GetConfig("ytdl_cmd"); err != nil {
+	if cmd, err := global.GetConfig("ytdl_cmd"); err != nil {
 		return conf, err
 	} else {
 		conf.Cmd = cmd
 	}
-	if args, err := service.GetConfig("ytdl_args"); err != nil {
+	if args, err := global.GetConfig("ytdl_args"); err != nil {
 		return conf, err
 	} else {
 		conf.Args = args
 	}
-	if burl, err := service.GetConfig("base_url"); err != nil {
+	if burl, err := global.GetConfig("base_url"); err != nil {
 		return conf, err
 	} else {
 		conf.BaseURL = burl
 	}
-	if apiKey, err := service.GetConfig("apiKey"); err != nil {
+	if apiKey, err := global.GetConfig("apiKey"); err != nil {
 		return conf, err
 	} else {
 		conf.ApiKey = apiKey
@@ -98,12 +100,21 @@ func CRSFHandler(c *gin.Context) {
 	}
 }
 
+func PluginListHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.String(http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+	list := plugin.GetPluginList()
+	c.JSON(http.StatusOK, list)
+}
+
 func ChannelListHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
 		c.String(http.StatusUnauthorized, "Unauthorized")
 		return
 	}
-	baseUrl, err := service.GetConfig("base_url")
+	baseUrl, err := global.GetConfig("base_url")
 	if err != nil {
 		log.Println(err.Error())
 		c.String(http.StatusInternalServerError, "error: %s", err.Error())
@@ -127,6 +138,7 @@ func ChannelListHandler(c *gin.Context) {
 			ID:         v.ID,
 			Name:       v.Name,
 			URL:        v.URL,
+			Parser:     v.Parser,
 			M3U8:       baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
 			Proxy:      v.Proxy,
 			LastUpdate: status.Time.Format("2006-01-02 15:04:05"),
@@ -144,15 +156,17 @@ func NewChannelHandler(c *gin.Context) {
 	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
+	chParser := c.PostForm("parser")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
 	}
 	chProxy := c.PostForm("proxy") != ""
 	mch := model.Channel{
-		Name:  chName,
-		URL:   chURL,
-		Proxy: chProxy,
+		Name:   chName,
+		URL:    chURL,
+		Proxy:  chProxy,
+		Parser: chParser,
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -161,7 +175,7 @@ func NewChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	go service.UpdateURLCacheSingle(chURL) // update liveURL on adding new channel
+	go service.UpdateURLCacheSingle(chURL, chParser) // update liveURL on adding new channel
 }
 
 func AuthProbeHandler(c *gin.Context) {
@@ -184,16 +198,18 @@ func UpdateChannelHandler(c *gin.Context) {
 	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
+	chParser := c.PostForm("parser")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
 	}
 	chProxy := c.PostForm("proxy") == "true"
 	mch := model.Channel{
-		ID:    chID,
-		Name:  chName,
-		URL:   chURL,
-		Proxy: chProxy,
+		ID:     chID,
+		Name:   chName,
+		URL:    chURL,
+		Proxy:  chProxy,
+		Parser: chParser,
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -202,7 +218,7 @@ func UpdateChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	go service.UpdateURLCacheSingle(chURL) // update liveURL on updating new channel
+	go service.UpdateURLCacheSingle(chURL, chParser) // update liveURL on updating new channel
 }
 
 func DeleteChannelHandler(c *gin.Context) {
@@ -248,7 +264,7 @@ func UpdateConfigHandler(c *gin.Context) {
 	baseUrl := strings.TrimSuffix(c.PostForm("baseurl"), "/")
 	apiKey := strings.TrimSpace(c.PostForm("apikey"))
 	if len(ytdlCmd) > 0 {
-		err := service.SetConfig("ytdl_cmd", ytdlCmd)
+		err := global.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
 			log.Println(err.Error())
 			c.String(http.StatusInternalServerError, err.Error())
@@ -256,7 +272,7 @@ func UpdateConfigHandler(c *gin.Context) {
 		}
 	}
 	if len(ytdlArgs) > 0 {
-		err := service.SetConfig("ytdl_args", ytdlArgs)
+		err := global.SetConfig("ytdl_args", ytdlArgs)
 		if err != nil {
 			log.Println(err.Error())
 			c.String(http.StatusInternalServerError, err.Error())
@@ -264,14 +280,14 @@ func UpdateConfigHandler(c *gin.Context) {
 		}
 	}
 	if len(baseUrl) > 0 {
-		err := service.SetConfig("base_url", baseUrl)
+		err := global.SetConfig("base_url", baseUrl)
 		if err != nil {
 			log.Println(err.Error())
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
-	service.SetConfig("apiKey", apiKey)
+	global.SetConfig("apiKey", apiKey)
 	c.String(http.StatusOK, "")
 }
 
@@ -312,7 +328,7 @@ func LoginActionHandler(c *gin.Context) {
 		return
 	}
 	pass := c.PostForm("password")
-	cfgPass, err := service.GetConfig("password")
+	cfgPass, err := global.GetConfig("password")
 	if err != nil {
 		c.String(http.StatusInternalServerError, err.Error())
 		return
@@ -360,7 +376,7 @@ func ChangePasswordHandler(c *gin.Context) {
 	if pass != pass2 {
 		c.String(http.StatusBadRequest, "Password mismatch!")
 	}
-	err := service.SetConfig("password", pass)
+	err := global.SetConfig("password", pass)
 	if err != nil {
 		log.Println(err.Error())
 		c.String(http.StatusInternalServerError, err.Error())

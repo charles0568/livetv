@@ -13,6 +13,7 @@ func Register(r *gin.Engine) {
 	r.GET("/cache.txt", handler.CacheHandler)
 
 	r.GET("/api/channels", handler.ChannelListHandler)
+	r.GET("/api/plugins", handler.PluginListHandler)
 	r.GET("/api/crsf", handler.CRSFHandler)
 	r.POST("/api/newchannel", handler.NewChannelHandler)
 	r.POST("/api/updatechannel", handler.UpdateChannelHandler)

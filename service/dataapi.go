@@ -6,12 +6,13 @@ import (
 	"regexp"
 
 	"github.com/sosodev/duration"
+	"github.com/zjyl1994/livetv/global"
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
 )
 
 func getYoutubeService() (*youtube.Service, error) {
-	apiKey, err := GetConfig("apiKey")
+	apiKey, err := global.GetConfig("apiKey")
 	if err != nil {
 		return nil, err
 	}
