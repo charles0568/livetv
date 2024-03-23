@@ -42,7 +42,7 @@ func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
 	matches, _ := regex.FindStringMatch(scontent)
 	if matches != nil {
 		gps := matches.Groups()
-		resultJson := gps[0].Captures[1].String()
+		resultJson := gps[1].Captures[0].String()
 		var ftvresp FTVResponse
 		json.Unmarshal([]byte(resultJson), &ftvresp)
 		if ftvresp.VideoURL != "" {
