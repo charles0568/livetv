@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -43,14 +44,17 @@ func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
 	if matches != nil {
 		gps := matches.Groups()
 		resultJson := gps[1].Captures[0].String()
+		log.Println("response json:", resultJson)
 		var ftvresp FTVResponse
 		json.Unmarshal([]byte(resultJson), &ftvresp)
 		if ftvresp.VideoURL != "" {
 			liveUrl, err := bestFromMasterPlaylist(ftvresp.VideoURL)
+			log.Println("best url:", liveUrl)
 			if err == nil {
 				if !isValidURL(liveUrl) {
 					liveUrl = getBaseURL(liveUrl) + liveUrl
 				}
+				log.Println("final url", liveUrl)
 				return liveUrl, "", nil
 			}
 			return "", "", err
