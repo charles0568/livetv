@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"io"
 	"log"
@@ -82,6 +83,8 @@ func main() {
 	if err != nil {
 		sessionSecert = "sessionSecert"
 	}
+	// ignore tls cert error
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	store := cookie.NewStore([]byte(sessionSecert))
