@@ -8,21 +8,23 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/zjyl1994/livetv/global"
 )
 
 type YtDlpParser struct{}
 
-func (p *YtDlpParser) Parse(liveUrl string) (string, string, error) {
+func (p *YtDlpParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
 	YtdlCmd, err := global.GetConfig("ytdl_cmd")
 	if err != nil {
 		log.Println(err)
-		return "", "", err
+		return nil, err
 	}
 	YtdlArgs, err := global.GetConfig("ytdl_args")
 	if err != nil {
 		log.Println(err)
-		return "", "", err
+		return nil, err
 	}
 	ytdlArgs := strings.Fields(YtdlArgs)
 	for i, v := range ytdlArgs {
@@ -33,7 +35,7 @@ func (p *YtDlpParser) Parse(liveUrl string) (string, string, error) {
 	_, err = exec.LookPath(YtdlCmd)
 	if err != nil {
 		log.Println(err)
-		return "", "", err
+		return nil, err
 	} else {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), global.HttpClientTimeout)
 		defer cancelFunc()
@@ -41,12 +43,14 @@ func (p *YtDlpParser) Parse(liveUrl string) (string, string, error) {
 		out, err := cmd.CombinedOutput()
 		output := strings.TrimSpace(string(out))
 		if err == nil {
-			return output, "", err
+			li := &model.LiveInfo{}
+			li.LiveUrl = output
+			return li, err
 		} else {
 			if output == "" {
-				return "", "", err
+				return nil, err
 			} else {
-				return "", "", errors.Join(errors.New(output+" , "), err)
+				return nil, errors.Join(errors.New(output+" , "), err)
 			}
 		}
 	}

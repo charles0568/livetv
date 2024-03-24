@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/zjyl1994/livetv/model"
 )
 
 type DirectM3U8Parser struct{}
 
-func (p *DirectM3U8Parser) Parse(liveUrl string) (string, string, error) {
+func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -18,7 +20,7 @@ func (p *DirectM3U8Parser) Parse(liveUrl string) (string, string, error) {
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -27,13 +29,15 @@ func (p *DirectM3U8Parser) Parse(liveUrl string) (string, string, error) {
 		log.Println(liveUrl, "is valid url")
 		liveUrl, err := bestFromMasterPlaylist(liveUrl, resp.Body) // extract the best quality live url from the master playlist
 		if err == nil {
+			li := &model.LiveInfo{}
 			if !isValidURL(liveUrl) {
 				liveUrl = getBaseURL(liveUrl) + liveUrl
 			}
-			return liveUrl, "", nil
+			li.LiveUrl = liveUrl
+			return li, nil
 		}
 	}
-	return "", "", NoMatchFeed
+	return nil, NoMatchFeed
 }
 
 func init() {

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/grafov/m3u8"
 	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/plugin"
@@ -38,8 +40,7 @@ func checkAndUpdateExpiringM3U8(youtubeURL string, liveURL string) (expired bool
 }*/
 
 func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
-	liveURL, ok := global.URLCache.Load(youtubeURL)
-	logo, _ := global.LogoCache.Load(youtubeURL)
+	liveInfo, ok := global.URLCache.Load(youtubeURL)
 	if ok {
 		// check and refresh expired/expiring feed
 		/*if checkAndUpdateExpiringM3U8(youtubeURL, liveURL) {
@@ -49,12 +50,16 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 				return "", "", errNoMatchFound
 			}
 		}*/
-		return liveURL, logo, nil
+		return liveInfo.LiveUrl, liveInfo.Logo, nil
 	} else {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)
 		if time.Now().Sub(status.Time) > time.Minute*2 {
-			return UpdateURLCacheSingle(youtubeURL, Parser)
+			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, Parser); err == nil {
+				return liveInfo.LiveUrl, liveInfo.Logo, nil
+			} else {
+				return "", "", err
+			}
 		} else {
 			return "", "", errors.New("parser cooling down")
 		}
@@ -125,13 +130,16 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 	return "", errors.New("Unknown type of playlist")
 }
 
-func RealLiveM3U8(liveUrl string, Parser string) (string, string, error) {
+func RealLiveM3U8(liveUrl string, Parser string) (*model.LiveInfo, error) {
 	if Parser == "" {
 		Parser = "youtube" // backward compatible with old database, use youtube parser by default
 	}
 	if p, err := plugin.GetPlugin(Parser); err == nil {
-		return p.Parse(liveUrl)
+		if liveInfo, ok := global.URLCache.Load(liveUrl); ok {
+			return p.Parse(liveUrl, liveInfo.ExtraInfo)
+		}
+		return p.Parse(liveUrl, "")
 	} else {
-		return "", "", err
+		return nil, err
 	}
 }

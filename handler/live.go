@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/zjyl1994/livetv/global"
@@ -164,10 +166,10 @@ func TsProxyHandler(c *gin.Context) {
 
 func CacheHandler(c *gin.Context) {
 	var sb strings.Builder
-	global.URLCache.Range(func(k, v string) bool {
+	global.URLCache.Range(func(k string, v *model.LiveInfo) bool {
 		sb.WriteString(k)
 		sb.WriteString(" => ")
-		sb.WriteString(v)
+		sb.WriteString(v.LiveUrl)
 		sb.WriteString("\n")
 		return true
 	})

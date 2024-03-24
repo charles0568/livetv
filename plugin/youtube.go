@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -9,12 +10,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/dlclark/regexp2"
 )
 
 type YoutubeParser struct{}
 
-func (p *YoutubeParser) Parse(liveUrl string) (string, string, error) {
+type YoutubeExtraInfo struct {
+	LastUrl string
+}
+
+func parseUrl(liveUrl string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -22,24 +29,13 @@ func (p *YoutubeParser) Parse(liveUrl string) (string, string, error) {
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
-	// the link itself is a valid M3U8
-	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
-		log.Println(liveUrl, "is a master url")
-		liveUrl, err := bestFromMasterPlaylist(liveUrl, resp.Body) // extract the best quality live url from the master playlist
-		if err == nil {
-			if !isValidURL(liveUrl) {
-				liveUrl = getBaseURL(liveUrl) + liveUrl
-			}
-			return liveUrl, "", nil
-		}
-	}
 	// DO not parse invalid response, parse HTML only
 	if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "html") {
-		return "", "", errors.New("invalid url")
+		return nil, errors.New("invalid url")
 	}
 	content, _ := io.ReadAll(resp.Body)
 	scontent := string(content)
@@ -50,7 +46,7 @@ func (p *YoutubeParser) Parse(liveUrl string) (string, string, error) {
 		liveMasterUrl := gps[0].Captures[0].String()
 		liveUrl, err := bestFromMasterPlaylist(liveMasterUrl) // extract the best quality live url from the master playlist
 		if err != nil {
-			return "", "", err
+			return nil, err
 		}
 
 		logo := ""
@@ -59,9 +55,35 @@ func (p *YoutubeParser) Parse(liveUrl string) (string, string, error) {
 		if logomatches != nil {
 			logo = logomatches.Groups()[0].Captures[0].String()
 		}
-		return liveUrl, logo, nil
+		var ei YoutubeExtraInfo
+		videoexp := regexp2.MustCompile(`"og:url"\s*content="(.+?)"`, 0)
+		urlmatches, _ := videoexp.FindStringMatch(scontent)
+		if urlmatches != nil {
+			ei.LastUrl = urlmatches.Groups()[1].Captures[0].String()
+			log.Println("found the real url for video:", ei.LastUrl)
+		}
+		sExtra, _ := json.Marshal(&ei)
+
+		li := &model.LiveInfo{}
+		li.LiveUrl = liveUrl
+		li.Logo = logo
+		li.ExtraInfo = string(sExtra)
+		return li, nil
 	}
-	return "", "", NoMatchFeed
+	return nil, NoMatchFeed
+}
+
+func (p *YoutubeParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+	var info YoutubeExtraInfo
+	json.Unmarshal([]byte(lastInfo), &info)
+	// for generic urls like "youtube.com/@channel/live", we try last url first, then the generic url
+	if getYouTubeVideoID(liveUrl) == "" && info.LastUrl != "" {
+		if li, err := parseUrl(info.LastUrl); err == nil {
+			log.Println("Reused last url for video interpretation:", info.LastUrl)
+			return li, err
+		}
+	}
+	return parseUrl(liveUrl)
 }
 
 func init() {

@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/util"
 )
@@ -22,25 +24,22 @@ func LoadChannelCache() {
 	}
 }
 
-func UpdateURLCacheSingle(Url string, Parser string) (string, string, error) {
+func UpdateURLCacheSingle(Url string, Parser string) (*model.LiveInfo, error) {
 	updateConcurrent <- true
 	defer func() {
 		<-updateConcurrent
 	}()
 	log.Println("caching", Url)
-	liveURL, logo, err := RealLiveM3U8(Url, Parser)
+	liveInfo, err := RealLiveM3U8(Url, Parser)
 	if err != nil {
-		log.Println("[YTDL]", err)
+		log.Println("[LiveTV]", err)
 		UpdateStatus(Url, Error, err.Error())
 	} else {
-		global.URLCache.Store(Url, liveURL)
-		if logo != "" {
-			global.LogoCache.Store(Url, logo)
-		}
+		global.URLCache.Store(Url, liveInfo)
 		UpdateStatus(Url, Ok, "Live!")
 		log.Println(Url, "cached")
 	}
-	return liveURL, logo, err
+	return liveInfo, err
 }
 
 func UpdateURLCache() {
@@ -49,9 +48,9 @@ func UpdateURLCache() {
 		log.Println(err)
 		return
 	}
-	global.URLCache.Range(func(k, value string) bool {
+	global.URLCache.Range(func(k string, info *model.LiveInfo) bool {
 		regex := regexp.MustCompile(`/expire/(\d+)/`)
-		matched := regex.FindStringSubmatch(value)
+		matched := regex.FindStringSubmatch(info.LiveUrl)
 		if len(matched) < 2 {
 			global.URLCache.Delete(k)
 			DeleteStatus(k)

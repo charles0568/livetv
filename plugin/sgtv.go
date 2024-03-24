@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/dlclark/regexp2"
 )
 
@@ -21,7 +23,7 @@ type FTVResponse struct {
 	fsVENDOR string
 }
 
-func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
+func (p *FTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -29,13 +31,13 @@ func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 	// DO not parse invalid response, parse HTML only
 	if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "html") {
-		return "", "", errors.New("invalid response")
+		return nil, errors.New("invalid response")
 	}
 	content, _ := io.ReadAll(resp.Body)
 	scontent := string(content)
@@ -50,13 +52,15 @@ func (p *FTVParser) Parse(liveUrl string) (string, string, error) {
 		if ftvresp.VideoURL != "" {
 			liveUrl, err := bestFromMasterPlaylist(ftvresp.VideoURL)
 			log.Println("best url:", liveUrl)
+			li := &model.LiveInfo{}
 			if err == nil {
-				return liveUrl, "", nil
+				li.LiveUrl = liveUrl
+				return li, nil
 			}
-			return "", "", err
+			return nil, err
 		}
 	}
-	return "", "", NoMatchFeed
+	return nil, NoMatchFeed
 }
 
 func init() {

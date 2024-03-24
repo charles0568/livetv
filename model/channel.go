@@ -7,4 +7,11 @@ type Channel struct {
 	URL    string
 	Parser string
 	Proxy  bool
+	Extra  string
+}
+
+type LiveInfo struct {
+	LiveUrl   string
+	Logo      string
+	ExtraInfo string
 }

@@ -10,11 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dlclark/regexp2"
+	"github.com/zjyl1994/livetv/model"
+
 	"github.com/grafov/m3u8"
 )
 
 type Plugin interface {
-	Parse(liveUrl string) (url string, logo string, error error)
+	Parse(liveUrl string, lastInfo string) (info *model.LiveInfo, error error)
 }
 
 var (
@@ -97,6 +100,25 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 		}
 	}
 	return "", errors.New("Unknown type of playlist")
+}
+
+// regex from https://stackoverflow.com/questions/5830387/how-do-i-find-all-youtube-video-ids-in-a-string-using-a-regex?lq=1
+func getYouTubeVideoID(url string) string {
+	regex := regexp2.MustCompile(`(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['"][^<>]*>|<\/a>))[?=&+%\w.-]*`, 0)
+	match, _ := regex.FindStringMatch(url)
+	if match != nil && len(match.Groups()) > 0 {
+		return match.Groups()[0].Captures[0].String()
+	}
+	return ""
+}
+
+func getYouTubeChannelID(url string) string {
+	regex := regexp2.MustCompile(`youtu((\.be)|(be\..{2,5}))\/((user)|(channel)|(c)|(@))\/?([a-zA-Z0-9\-_]{1,})`, 0)
+	match, _ := regex.FindStringMatch(url)
+	if match != nil && len(match.Groups()) > 0 {
+		return match.Groups()[9].Captures[0].String()
+	}
+	return ""
 }
 
 func GetPlugin(name string) (Plugin, error) {
