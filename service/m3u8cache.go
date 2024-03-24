@@ -32,8 +32,9 @@ func UpdateURLCacheSingle(Url string, Parser string) (*model.LiveInfo, error) {
 	log.Println("caching", Url)
 	liveInfo, err := RealLiveM3U8(Url, Parser)
 	if err != nil {
-		log.Println("[LiveTV]", err)
+		global.URLCache.Delete(Url)
 		UpdateStatus(Url, Error, err.Error())
+		log.Println("[LiveTV]", err)
 	} else {
 		global.URLCache.Store(Url, liveInfo)
 		UpdateStatus(Url, Ok, "Live!")
