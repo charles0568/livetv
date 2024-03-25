@@ -6,13 +6,13 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 
@@ -114,17 +114,26 @@ func unpad(src []byte) []byte {
 }
 
 func fakeChromeRequest(req *http.Request) (*http.Response, error) {
-	// conn, err := tls.Dial("tcp", req.Host+":443", &tls.Config{
-	// 	ServerName: req.Host,
-	// })
+	conn, err := tls.Dial("tcp", req.Host+":443", &tls.Config{
+		ServerName: req.Host,
+	})
 
-	conn, err := net.Dial("tcp", req.Host+":80")
+	// conn, err := net.Dial("tcp", req.Host+":80")
 	if err == nil {
 		defer conn.Close()
 	} else {
 		return nil, err
 	}
-	fakeRequestTemplate := "POST %s HTTP/1.1\r\nHost: %s\r\nUser-Agent: %s\r\nContent-Type: application/x-www-form-urlencoded; charset=UTF-8\r\nAccept: */*\r\nConnection: keep-alive\r\nContent-Length: %d\r\n\r\n%s"
+	fakeRequestTemplate := "POST %s HTTP/1.1\r\n" +
+		"Host: %s\r\nUser-Agent: %s\r\n" +
+		"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n" +
+		"Accept: */*\r\n" +
+		"Accept-Language: en,en-US;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6\r\n" +
+		"Connection: keep-alive\r\n" +
+		"Content-Length: %d\r\n" +
+		"Referrer: https://www.4gtv.tv/\r\n" +
+		"ReferrerPolicy: strict-origin-when-cross-origin\r\n" +
+		"\r\n%s"
 	body, _ := io.ReadAll(req.Body)
 	content := fmt.Sprintf(fakeRequestTemplate, req.URL.RequestURI(), req.Host, DefaultUserAgent, len(body), string(body))
 	log.Println(content)
