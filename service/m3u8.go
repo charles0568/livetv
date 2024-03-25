@@ -13,7 +13,7 @@ import (
 var startUp int64 = 0
 
 func PlaceHolderHLS() string {
-	t := (time.Now().Unix() - startUp) / 60
+	// t := (time.Now().Unix() - startUp) / 60
 	baseUrl, _ := global.GetConfig("base_url")
 	if !strings.HasSuffix(baseUrl, "/") {
 		baseUrl += "/"
@@ -21,17 +21,18 @@ func PlaceHolderHLS() string {
 	placeholder := baseUrl + "placeholder.ts"
 	tpl := `#EXTM3U
 #EXT-X-VERSION:3
-#EXT-X-MEDIA-SEQUENCE:%d
+#EXT-X-MEDIA-SEQUENCE:1
 #EXT-X-TARGETDURATION:60
 #EXT-X-DISCONTINUITY:0
 #EXTINF:60.000000,
-%s?t=%d
+%s?t=1
 #EXTINF:60.000000,
-%s?t=%d
+%s?t=2
 #EXTINF:60.000000,
-%s?t=%d
+%s?t=3
+#EXT-X-ENDLIST
 `
-	return fmt.Sprintf(tpl, t, placeholder, t-1, placeholder, t, placeholder, t+1)
+	return fmt.Sprintf(tpl, placeholder, placeholder, placeholder)
 }
 
 func M3U8Process(playlistUrl string, data string, prefixURL string) string {
