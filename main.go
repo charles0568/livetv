@@ -20,11 +20,23 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/robfig/cron/v3"
 	"github.com/zjyl1994/livetv/global"
+	"github.com/zjyl1994/livetv/plugin"
 	"github.com/zjyl1994/livetv/route"
 	"github.com/zjyl1994/livetv/service"
 )
 
+func demo() {
+	p, _ := plugin.GetPlugin("4GTV")
+	_, err := p.Parse("https://api2.4gtv.tv/Channel/GetChannelUrl3?ChannelID=3&AssetID=4gtv-4gtv002", "")
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func main() {
+	demo()
+	return
+
 	pwd := flag.String("pwd", "", "reset password")
 	listen := flag.String("listen", ":9000", "listening address")
 	flag.Parse()
