@@ -211,15 +211,18 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	defer resp.Body.Close()
 
 	content, _ := io.ReadAll(resp.Body)
-	log.Println("response:", resp.Header, string(content))
+	log.Println(resp, string(content))
 	var sgtvResp SGTVResponse
 	json.Unmarshal(content, &sgtvResp)
 	if sgtvResp.Success {
 		cleartext, err := p.decrypt(sgtvResp.Data, iv)
 		if err == nil {
 			var chInfo SGTVChannelInfo
-			json.Unmarshal(cleartext, &chInfo)
-			log.Println(chInfo.Urls)
+			if json.Unmarshal(cleartext, &chInfo) == nil && len(chInfo.Urls) > 0 {
+				li := &model.LiveInfo{}
+				li.LiveUrl = chInfo.Urls[0]
+				return li, nil
+			}
 		}
 	}
 	return nil, NoMatchFeed

@@ -21,6 +21,26 @@ type YoutubeExtraInfo struct {
 	LastUrl string
 }
 
+func isLive(m3u8Url string) bool {
+	client := http.Client{
+		Timeout: time.Second * 10,
+	}
+	req, err := http.NewRequest("GET", m3u8Url, nil)
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+
+	defer resp.Body.Close()
+	if resp.ContentLength > 10*1024*1024 || !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
+		return false
+	}
+	content, _ := io.ReadAll(resp.Body)
+	scontent := string(content)
+	return !strings.Contains(scontent, "EXT-X-ENDLIST")
+}
+
 func parseUrl(liveUrl string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
@@ -47,6 +67,11 @@ func parseUrl(liveUrl string) (*model.LiveInfo, error) {
 		liveUrl, err := bestFromMasterPlaylist(liveMasterUrl) // extract the best quality live url from the master playlist
 		if err != nil {
 			return nil, err
+		}
+
+		// check if the live feed is still streaming
+		if !isLive(liveUrl) {
+			return nil, errors.New("No longer streaming")
 		}
 
 		logo := ""

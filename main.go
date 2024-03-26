@@ -34,8 +34,8 @@ func demo() {
 }
 
 func main() {
-	demo()
-	return
+	// demo()
+	// return
 
 	pwd := flag.String("pwd", "", "reset password")
 	listen := flag.String("listen", ":9000", "listening address")
