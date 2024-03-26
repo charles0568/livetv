@@ -13,9 +13,9 @@ import (
 	"net/url"
 	"path/filepath"
 
-	hawk "github.com/juiced-aio/hawk-go"
-	http "github.com/useflyent/fhttp"
-	"github.com/useflyent/fhttp/cookiejar"
+	http "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 	"github.com/zjyl1994/livetv/model"
 )
 
@@ -52,6 +52,17 @@ type SGTVChannelInfo struct {
 	Urls        []string `json:"flstURLs"`
 	Cover       string   `json:"fsHEAD_FRAME"`
 	BitRate     []int32  `json:"flstBITRATE"`
+}
+
+func newTlsClient() (tls_client.HttpClient, error) {
+	jar := tls_client.NewCookieJar()
+	options := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithClientProfile(profiles.Safari_Ipad_15_6),
+		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
+	}
+
+	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
 func (p *SGTVParser) encrypt(input []byte, iv []byte) (string, error) {
@@ -118,19 +129,14 @@ func unpad(src []byte) []byte {
 
 func cloudScraper(req *http.Request) (*http.Response, error) {
 	// Client also will need a cookie jar.
-	client := http.Client{}
-	cookieJar, _ := cookiejar.New(nil)
-	client.Jar = cookieJar
-	scraper := hawk.CFInit(client, "2captcha_key_here", true)
-	// You will have to create your own function if you want to solve captchas.
-	scraper.CaptchaFunction = func(originalURL string, siteKey string) (string, error) {
-		// CaptchaFunction should return the token as a string.
-		return "", nil
-	}
+	// client := http.Client{}
+	// cookieJar, _ := cookiejar.New(nil)
+	// client.Jar = cookieJar
+	client, _ := newTlsClient()
 	req.Header = http.Header{
-		"sec-ch-ua":          {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
-		"sec-ch-ua-mobile":   {`?0`},
-		"User-Agent":         {DefaultUserAgent},
+		// "sec-ch-ua":        {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
+		"sec-ch-ua-mobile":   {`?1`},
+		"User-Agent":         {`Mozilla/5.0 (iPad; CPU OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/121.0.2277.107 Version/16.0 Mobile/15E148 Safari/604.1`},
 		"Accept":             {`*/*`},
 		"Sec-Fetch-Site":     {`same-site`},
 		"Sec-Fetch-Mode":     {`cors`},
@@ -142,7 +148,7 @@ func cloudScraper(req *http.Request) (*http.Response, error) {
 		http.PHeaderOrderKey: {":method", ":authority", ":scheme", ":path"},
 	}
 
-	return scraper.Do(req)
+	return client.Do(req)
 }
 
 func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
@@ -151,7 +157,7 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	var sgtvReq SGTVRequest
 	sgtvReq.ChannelID = u.Query().Get("ch")
 	sgtvReq.AssetID = filepath.Base(u.Path)
-	sgtvReq.DeviceType = "pc"
+	sgtvReq.DeviceType = "mobile"
 
 	if sgtvReq.ChannelID == "" || sgtvReq.AssetID == "" {
 		return nil, errors.New("Channel and asset ID must be provided")
