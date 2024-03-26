@@ -193,8 +193,12 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 		if err == nil {
 			var chInfo SGTVChannelInfo
 			if json.Unmarshal(cleartext, &chInfo) == nil && len(chInfo.Urls) > 0 {
+				liveUrl, err := bestFromMasterPlaylist(chInfo.Urls[0]) // extract the best quality live url from the master playlist
+				if err != nil {
+					return nil, err
+				}
 				li := &model.LiveInfo{}
-				li.LiveUrl = chInfo.Urls[0]
+				li.LiveUrl = liveUrl
 				return li, nil
 			}
 		}
