@@ -85,7 +85,7 @@ func main() {
 	log.Println("LiveTV starting...")
 	go service.LoadChannelCache()
 	c := cron.New()
-	_, err = c.AddFunc("0 */1 * * *", service.UpdateURLCache)
+	_, err = c.AddFunc("0 */3 * * *", service.UpdateURLCache)
 	if err != nil {
 		log.Panicf("preloadCron: %s\n", err)
 	}

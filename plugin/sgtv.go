@@ -128,20 +128,18 @@ func cloudScraper(req *http.Request) (*http.Response, error) {
 		return "", nil
 	}
 	req.Header = http.Header{
-		"sec-ch-ua":                 {`"Chromium";v="120", " Not A;Brand";v="24", "Google Chrome";v="120"`},
-		"sec-ch-ua-mobile":          {`?0`},
-		"upgrade-insecure-requests": {`1`},
-		"user-agent":                {DefaultUserAgent},
-		"accept":                    {`text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9`},
-		"sec-fetch-site":            {`none`},
-		"sec-fetch-mode":            {`navigate`},
-		"sec-fetch-user":            {`?1`},
-		"sec-fetch-dest":            {`document`},
-		"content-type":              {"application/x-www-form-urlencoded; charset=UTF-8"},
-		"accept-encoding":           {`gzip, deflate`},
-		"accept-language":           {`en-US,en;q=0.9`},
-		http.HeaderOrderKey:         {"sec-ch-ua", "sec-ch-ua-mobile", "upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language"},
-		http.PHeaderOrderKey:        {":method", ":authority", ":scheme", ":path"},
+		"sec-ch-ua":          {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
+		"sec-ch-ua-mobile":   {`?0`},
+		"User-Agent":         {DefaultUserAgent},
+		"Accept":             {`*/*`},
+		"Sec-Fetch-Site":     {`same-site`},
+		"Sec-Fetch-Mode":     {`cors`},
+		"Sec-Fetch-Dest":     {`empty`},
+		"Content-Type":       {"application/x-www-form-urlencoded; charset=UTF-8"},
+		"Accept-Encoding":    {`gzip, deflate`},
+		"Accept-Language":    {`en-US,en;q=0.9`},
+		http.HeaderOrderKey:  {"sec-ch-ua", "sec-ch-ua-mobile", "upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language"},
+		http.PHeaderOrderKey: {":method", ":authority", ":scheme", ":path"},
 	}
 
 	return scraper.Do(req)
