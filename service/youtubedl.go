@@ -71,6 +71,7 @@ func getBaseURL(rawURL string) string {
 	if err != nil {
 		return ""
 	}
+	parsedURL.RawQuery = ""
 
 	// Remove the last element (document) from the path
 	parsedURL.Path = path.Dir(parsedURL.Path) + "/"
