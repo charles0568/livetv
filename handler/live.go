@@ -130,7 +130,6 @@ func LiveHandler(c *gin.Context) {
 func TsProxyHandler(c *gin.Context) {
 	zipedRemoteURL := c.Query("k")
 	remoteURL, err := util.DecompressString(zipedRemoteURL)
-	log.Println(remoteURL)
 	if err != nil {
 		log.Println(err)
 		c.AbortWithStatus(http.StatusInternalServerError)
