@@ -115,11 +115,12 @@ func LiveHandler(c *gin.Context) {
 					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE:VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 				}
 			}
-			if channelInfo.Proxy {
-				m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
-			} else {
-				m3u8Body = bodyString
-			}
+			m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=", channelInfo.Proxy)
+			// if channelInfo.Proxy {
+			// 	m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
+			// } else {
+			// 	m3u8Body = bodyString
+			// }
 			global.M3U8Cache.Set(channelCacheKey, m3u8Body, 3*time.Second)
 		}
 	}
@@ -129,6 +130,7 @@ func LiveHandler(c *gin.Context) {
 func TsProxyHandler(c *gin.Context) {
 	zipedRemoteURL := c.Query("k")
 	remoteURL, err := util.DecompressString(zipedRemoteURL)
+	log.Println(remoteURL)
 	if err != nil {
 		log.Println(err)
 		c.AbortWithStatus(http.StatusInternalServerError)

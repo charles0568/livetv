@@ -5,10 +5,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 	"time"
+
+	"github.com/zjyl1994/livetv/global"
 
 	"github.com/dlclark/regexp2"
 	"github.com/zjyl1994/livetv/model"
@@ -32,25 +32,6 @@ const (
 
 func registerPlugin(name string, parser Plugin) {
 	pluginCenter[name] = parser
-}
-
-func getBaseURL(rawURL string) string {
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return ""
-	}
-	parsedURL.RawQuery = ""
-
-	// Remove the last element (document) from the path
-	parsedURL.Path = path.Dir(parsedURL.Path) + "/"
-
-	// Rebuild the URL without the document part
-	return parsedURL.String()
-}
-
-func isValidURL(u string) bool {
-	_, err := url.ParseRequestURI(u)
-	return err == nil
 }
 
 func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, error) {
@@ -93,8 +74,8 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 					selectedBw = v.Bandwidth
 				}
 			}
-			if !isValidURL(selectedUrl) {
-				selectedUrl = getBaseURL(masterUrl) + selectedUrl
+			if !global.IsValidURL(selectedUrl) {
+				selectedUrl = global.GetBaseURL(masterUrl) + selectedUrl
 			}
 			return selectedUrl, nil
 		}

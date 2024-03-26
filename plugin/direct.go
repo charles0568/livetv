@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/model"
 )
 
@@ -30,8 +31,8 @@ func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveIn
 		liveUrl, err := bestFromMasterPlaylist(liveUrl, resp.Body) // extract the best quality live url from the master playlist
 		if err == nil {
 			li := &model.LiveInfo{}
-			if !isValidURL(liveUrl) {
-				liveUrl = getBaseURL(liveUrl) + liveUrl
+			if !global.IsValidURL(liveUrl) {
+				liveUrl = global.GetBaseURL(liveUrl) + liveUrl
 			}
 			li.LiveUrl = liveUrl
 			return li, nil

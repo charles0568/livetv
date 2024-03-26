@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/url"
+	"path/filepath"
 
 	hawk "github.com/juiced-aio/hawk-go"
 	http "github.com/useflyent/fhttp"
@@ -18,8 +19,11 @@ import (
 	"github.com/zjyl1994/livetv/model"
 )
 
-var sgtvAESKey []byte = []byte("ilyB29ZdruuQjC45JhBBR7o2Z8WJ26Vg")
-var sgtvIV []byte = []byte("JUMxvVMmszqUTeKn")
+var (
+	sgtvAESKey []byte = []byte("ilyB29ZdruuQjC45JhBBR7o2Z8WJ26Vg")
+	sgtvIV     []byte = []byte("JUMxvVMmszqUTeKn")
+	sgtvAPI    string = "https://api2.4gtv.tv/Channel/GetChannelUrl3"
+)
 
 // the current channel API endpoint is https://api2.4gtv.tv/Channel/GetChannelUrl3
 
@@ -117,17 +121,17 @@ func cloudScraper(req *http.Request) (*http.Response, error) {
 	client := http.Client{}
 	cookieJar, _ := cookiejar.New(nil)
 	client.Jar = cookieJar
-	scraper := hawk.CFInit(client, "YOUR_KEY_HERE", true)
+	scraper := hawk.CFInit(client, "2captcha_key_here", true)
 	// You will have to create your own function if you want to solve captchas.
 	scraper.CaptchaFunction = func(originalURL string, siteKey string) (string, error) {
 		// CaptchaFunction should return the token as a string.
 		return "", nil
 	}
 	req.Header = http.Header{
-		"sec-ch-ua":                 {`"Chromium";v="92", " Not A;Brand";v="99", "Google Chrome";v="92"`},
+		"sec-ch-ua":                 {`"Chromium";v="120", " Not A;Brand";v="24", "Google Chrome";v="120"`},
 		"sec-ch-ua-mobile":          {`?0`},
 		"upgrade-insecure-requests": {`1`},
-		"user-agent":                {`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36`},
+		"user-agent":                {DefaultUserAgent},
 		"accept":                    {`text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9`},
 		"sec-fetch-site":            {`none`},
 		"sec-fetch-mode":            {`navigate`},
@@ -147,36 +151,18 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	iv := sgtvIV // yes, it's predefined and fully static
 	u, _ := url.Parse(liveUrl)
 	var sgtvReq SGTVRequest
-	sgtvReq.ChannelID = u.Query().Get("ChannelID")
-	sgtvReq.AssetID = u.Query().Get("AssetID")
+	sgtvReq.ChannelID = u.Query().Get("ch")
+	sgtvReq.AssetID = filepath.Base(u.Path)
 	sgtvReq.DeviceType = "pc"
 
 	if sgtvReq.ChannelID == "" || sgtvReq.AssetID == "" {
 		return nil, errors.New("Channel and asset ID must be provided")
 	}
 
-	u.RawQuery = "" // drop our custom made querystring
-
 	body, _ := json.Marshal(&sgtvReq)
-	log.Println("json request is", string(body))
 	encodedBody, _ := p.encrypt(body, iv) // encrypt our request
-	log.Println("encrypted", encodedBody)
 	formData := url.Values{"value": {encodedBody}}
-	log.Println("post body", formData.Encode())
-	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader([]byte(formData.Encode())))
-	req.Header.Set("User-Agent", DefaultUserAgent)
-	req.Header.Set("Accept-Language", "en,en-US;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6")
-	// req.Header.Set("Accept-Encoding", "identity")
-	req.Header.Set("Referer", "https://www.4gtv.tv/")
-	req.Header.Set("sec-ch-ua", "\"Chromium\";v=\"120\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"120\"")
-	req.Header.Set("DNT", "1")
-	req.Header.Set("Origin", "https://www.4gtv.tv")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-	req.Header.Set("sec-ch-ua-platform", "\"Windows\"")
-	req.Header.Set("sec-ch-ua-mobile", "?0")
-	req.Header.Set("Sec-Fetch-Site", "same-site")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
-	req.Header.Set("Sec-Fetch-Dest", "empty")
+	req, err := http.NewRequest(http.MethodPost, sgtvAPI, bytes.NewReader([]byte(formData.Encode())))
 	resp, err := cloudScraper(req)
 	if err != nil {
 		return nil, err
@@ -185,7 +171,7 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	defer resp.Body.Close()
 
 	content, _ := io.ReadAll(resp.Body)
-	log.Println(string(content))
+	log.Println("response:", string(content))
 	var sgtvResp SGTVResponse
 	json.Unmarshal(content, &sgtvResp)
 	if sgtvResp.Success {
