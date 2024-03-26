@@ -6,17 +6,19 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 
+	tls "github.com/refraction-networking/utls"
 	"github.com/zjyl1994/livetv/model"
+	"golang.org/x/net/http2"
 )
 
 var sgtvAESKey []byte = []byte("ilyB29ZdruuQjC45JhBBR7o2Z8WJ26Vg")
@@ -114,31 +116,57 @@ func unpad(src []byte) []byte {
 }
 
 func fakeChromeRequest(req *http.Request) (*http.Response, error) {
-	conn, err := tls.Dial("tcp", req.Host+":443", &tls.Config{
+	tcpconn, err := net.Dial("tcp", req.Host+":443")
+	conn := tls.UClient(tcpconn, &tls.Config{
 		ServerName: req.Host,
-	})
-
-	// conn, err := net.Dial("tcp", req.Host+":80")
+	}, tls.HelloChrome_120)
+	err = conn.Handshake() //do handshake
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
 	if err == nil {
 		defer conn.Close()
 	} else {
 		return nil, err
 	}
-	fakeRequestTemplate := "POST %s HTTP/1.1\r\n" +
-		"Host: %s\r\nUser-Agent: %s\r\n" +
-		"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n" +
-		"Accept: */*\r\n" +
-		"Accept-Language: en,en-US;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6\r\n" +
-		"Connection: keep-alive\r\n" +
-		"Content-Length: %d\r\n" +
-		"Referrer: https://www.4gtv.tv/\r\n" +
-		"ReferrerPolicy: strict-origin-when-cross-origin\r\n" +
-		"\r\n%s"
-	body, _ := io.ReadAll(req.Body)
-	content := fmt.Sprintf(fakeRequestTemplate, req.URL.RequestURI(), req.Host, DefaultUserAgent, len(body), string(body))
-	log.Println(content)
-	conn.Write([]byte(content))
-	return http.ReadResponse(bufio.NewReader(conn), req)
+
+	if conn.ConnectionState().NegotiatedProtocol == "h2" {
+		log.Println("h2 connection")
+		req.Proto = "HTTP/2.0"
+		req.ProtoMajor = 2
+		req.ProtoMinor = 0
+		tr := http2.Transport{}
+		cConn, _ := tr.NewClientConn(conn)
+		return cConn.RoundTrip(req)
+	} else {
+		log.Println("http1.1 connection")
+		fakeRequestTemplate := "POST %s HTTP/1.1\r\n" +
+			"Host: %s\r\n" +
+			"Connection: keep-alive\r\n" +
+			"Content-Length: %d\r\n" +
+			"sec-ch-ua: \"Chromium\";v=\"120\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"120\"\r\n" +
+			"Accept: */*\r\n" +
+			"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n" +
+			"DNT: 1\r\n" +
+			"sec-ch-ua-mobile: ?0\r\n" +
+			"User-Agent: %s\r\n" +
+			"sec-ch-ua-platform: \"Windows\"\r\n" +
+			"Origin: https://www.4gtv.tv\r\n" +
+			"Sec-Fetch-Site: same-site\r\n" +
+			"Sec-Fetch-Mode: cors\r\n" +
+			"Sec-Fetch-Dest: empty\r\n" +
+			"Referer: https://www.4gtv.tv/\r\n" +
+			"Accept-Encoding: gzip, deflate, br, zstd\r\n" +
+			"Accept-Language: en,en-US;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6\r\n" +
+			"\r\n%s"
+
+		body, _ := io.ReadAll(req.Body)
+		content := fmt.Sprintf(fakeRequestTemplate, req.URL.String(), req.Host, len(body), DefaultUserAgent, string(body))
+		log.Println(content)
+		conn.Write([]byte(content))
+		return http.ReadResponse(bufio.NewReader(conn), req)
+	}
 }
 
 func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
@@ -162,20 +190,28 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	formData := url.Values{"value": {encodedBody}}
 	log.Println("post body", formData.Encode())
 	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader([]byte(formData.Encode())))
-
+	req.Header.Set("User-Agent", DefaultUserAgent)
+	req.Header.Set("Accept-Language", "en,en-US;q=0.9,zh-CN;q=0.8,zh;q=0.7,zh-TW;q=0.6")
+	// req.Header.Set("Accept-Encoding", "identity")
+	req.Header.Set("Referer", "https://www.4gtv.tv/")
+	req.Header.Set("sec-ch-ua", "\"Chromium\";v=\"120\", \"Not(A:Brand\";v=\"24\", \"Google Chrome\";v=\"120\"")
+	req.Header.Set("DNT", "1")
+	req.Header.Set("Origin", "https://www.4gtv.tv")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	req.Header.Set("sec-ch-ua-platform", "\"Windows\"")
+	req.Header.Set("sec-ch-ua-mobile", "?0")
+	req.Header.Set("Sec-Fetch-Site", "same-site")
+	req.Header.Set("Sec-Fetch-Mode", "cors")
+	req.Header.Set("Sec-Fetch-Dest", "empty")
 	resp, err := fakeChromeRequest(req)
 	if err != nil {
 		return nil, err
 	}
 
 	defer resp.Body.Close()
-	// DO not parse invalid response, parse json only
-	// if resp.ContentLength > 10*1024*1024 || !strings.Contains(resp.Header.Get("Content-Type"), "json") {
-	// 	return nil, errors.New("invalid response")
-	// }
+
 	content, _ := io.ReadAll(resp.Body)
-	// content := []byte(`{"Data":"61BzIrtQETynvjX3OTfc5pbRHnRBtOkYB5VSr28h8pc+CRH3GUdJfzkV6Z7HdGhoKDcwEIpBCtDkUotR9gGjUsxUnX4Tj6REmrNLtQ5B7TwmjScCdy1g+VhMKM83RWr1CHxbH+fBXb2PNMe/bVt+G3xpkUVcZDgSIJvuRPi6QurCf5hcOKg9TxaExA+p9CG3KoHDo9SJzpuma0+dBHy/fbMCu26D8xOlWCVTePKV4+krT04+l7XKrbl8t/fAiubnZ/OwaVVa0hSQOiqIJgqER2YONVPZbjgospUt/oiQ/xle+GVv1p1PZKUmVgcEKU9+BIlskdhQ+lmvU3CAf4t9XMFlDFoDJg3tXbO6WHldC9j1i8/kIR31bfxvZSin+wex+f1I0DjP8zC48lx1oHf95r8nfA5ImCNPrCO3xAI3OUxMzCtxBuB0sPxgNrjvDgo+4RGDaOppV9GMoozJTslBbuhawWJQf7pyW0Z/M609oFloNkT67poZY/C7bFI8XBPuYPDZNfSAwERi4j8C9gfsTjRl1/gbFFKIh9CGscpqzszKUjWppGrVMGtZoQBWG905IkWpJrfDa5D1XxhbXucN5q9WVn/MQO6Rd3dLApDbOnkNSTwfgR1NdukSrgJoX95gyY8yUgzVmYLkNbiBwVenTq9J9rG1xqbyktbrWqtVYRta+QaM7s9x3mNjTYaGwcDQRDeDuBAlsrOZAs15OxArwuP0cF09CgI+3eWqsnILdL4XHYNYaAUQUhwvWlPo+9Zh+saK4Ku6s+bD7vrSS+W3DLm06T8PUNs31RrsWOkzXuL+8q9IYkAWOUxtbCwV2oX9zzU0GjwHqkIsxcHO1yluYdaT/Xym0ra97zNy5O93v6+gAv2Aft/HLGlMpELRGDBkvofCA/frgDPY8/B7/K1ep1fq8Q2sy3Tq3ZUAPwYBUpny7H8JZR9SyXXUVMweLqRlP4Ss/mEyQZ9M1ep5F5Q98w==","Success":true,"Status":200,"ErrMessage":"成功"}`)
-	log.Println("response:", string(content))
+	log.Println("response:", resp.Header, string(content))
 	var sgtvResp SGTVResponse
 	json.Unmarshal(content, &sgtvResp)
 	if sgtvResp.Success {
