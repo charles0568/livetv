@@ -27,16 +27,15 @@ import (
 
 func demo() {
 	p, _ := plugin.GetPlugin("4GTV")
-	_, err := p.Parse("https://api2.4gtv.tv/Channel/GetChannelUrl3?ChannelID=3&AssetID=4gtv-4gtv002", "")
+	li, err := p.Parse("https://api2.4gtv.tv/Channel/GetChannelUrl3?ChannelID=3&AssetID=4gtv-4gtv002", "")
 	if err != nil {
 		log.Println(err)
+	} else {
+		log.Println("liveurl:", li.LiveUrl)
 	}
 }
 
 func main() {
-	// demo()
-	// return
-
 	pwd := flag.String("pwd", "", "reset password")
 	listen := flag.String("listen", ":9000", "listening address")
 	flag.Parse()

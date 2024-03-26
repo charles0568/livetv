@@ -9,10 +9,12 @@ require (
 	github.com/grafov/m3u8 v0.12.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/joho/godotenv v1.3.0
+	github.com/juiced-aio/hawk-go v0.0.0-20210830070956-a7781ad416c1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/refraction-networking/utls v1.6.3
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sosodev/duration v1.2.0
+	github.com/useflyent/fhttp v0.0.0-20211004035111-333f430cfbbf
 	golang.org/x/net v0.20.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.163.0
@@ -21,6 +23,8 @@ require (
 require (
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	github.com/Lazarus/lz-string-go v0.0.0-20210604111459-ed7cd5a66c48 // indirect
+	github.com/anaskhan96/soup v1.2.4 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/bytedance/sonic v1.10.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
