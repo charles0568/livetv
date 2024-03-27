@@ -1,4 +1,6 @@
 # LiveTV
+[![Go](https://github.com/snowie2000/livetv/actions/workflows/go.yml/badge.svg)](https://github.com/snowie2000/livetv/actions/workflows/go.yml)
+
 Use Youtube live as IPTV feeds and more!
 
 ## Install 
