@@ -10,12 +10,11 @@ import (
 	"errors"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"path/filepath"
 
-	http "github.com/bogdanfinn/fhttp"
-	tls_client "github.com/bogdanfinn/tls-client"
-	"github.com/bogdanfinn/tls-client/profiles"
+	freq "github.com/imroc/req/v3"
 	"github.com/zjyl1994/livetv/model"
 )
 
@@ -52,17 +51,6 @@ type SGTVChannelInfo struct {
 	Urls        []string `json:"flstURLs"`
 	Cover       string   `json:"fsHEAD_FRAME"`
 	BitRate     []int32  `json:"flstBITRATE"`
-}
-
-func newTlsClient() (tls_client.HttpClient, error) {
-	jar := tls_client.NewCookieJar()
-	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(30),
-		tls_client.WithClientProfile(profiles.Safari_Ipad_15_6),
-		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
-	}
-
-	return tls_client.NewHttpClient(tls_client.NewNoopLogger(), options...)
 }
 
 func (p *SGTVParser) encrypt(input []byte, iv []byte) (string, error) {
@@ -127,28 +115,32 @@ func unpad(src []byte) []byte {
 	return src[:(length - unpadding)]
 }
 
-func cloudScraper(req *http.Request) (*http.Response, error) {
-	// Client also will need a cookie jar.
-	// client := http.Client{}
-	// cookieJar, _ := cookiejar.New(nil)
-	// client.Jar = cookieJar
-	client, _ := newTlsClient()
-	req.Header = http.Header{
-		// "sec-ch-ua":        {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
-		"sec-ch-ua-mobile":   {`?1`},
-		"User-Agent":         {`Mozilla/5.0 (iPad; CPU OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/121.0.2277.107 Version/16.0 Mobile/15E148 Safari/604.1`},
-		"Accept":             {`*/*`},
-		"Sec-Fetch-Site":     {`same-site`},
-		"Sec-Fetch-Mode":     {`cors`},
-		"Sec-Fetch-Dest":     {`empty`},
-		"Content-Type":       {"application/x-www-form-urlencoded; charset=UTF-8"},
-		"Accept-Encoding":    {`gzip, deflate`},
-		"Accept-Language":    {`en-US,en;q=0.9`},
-		http.HeaderOrderKey:  {"sec-ch-ua", "sec-ch-ua-mobile", "upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language"},
-		http.PHeaderOrderKey: {":method", ":authority", ":scheme", ":path"},
-	}
+func cloudScraper(req *http.Request) (*freq.Response, error) {
+	client := freq.ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
 
-	return client.Do(req)
+	return client.R().SetBody(req.Body).Post(req.URL.String())
+
+	// // Client also will need a cookie jar.
+	// // client := http.Client{}
+	// // cookieJar, _ := cookiejar.New(nil)
+	// // client.Jar = cookieJar
+	// client, _ := newTlsClient()
+	// req.Header = http.Header{
+	// 	// "sec-ch-ua":        {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
+	// 	"sec-ch-ua-mobile":   {`?1`},
+	// 	"User-Agent":         {`Mozilla/5.0 (iPad; CPU OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/121.0.2277.107 Version/16.0 Mobile/15E148 Safari/604.1`},
+	// 	"Accept":             {`*/*`},
+	// 	"Sec-Fetch-Site":     {`same-site`},
+	// 	"Sec-Fetch-Mode":     {`cors`},
+	// 	"Sec-Fetch-Dest":     {`empty`},
+	// 	"Content-Type":       {"application/x-www-form-urlencoded; charset=UTF-8"},
+	// 	"Accept-Encoding":    {`gzip, deflate`},
+	// 	"Accept-Language":    {`en-US,en;q=0.9`},
+	// 	http.HeaderOrderKey:  {"sec-ch-ua", "sec-ch-ua-mobile", "upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language"},
+	// 	http.PHeaderOrderKey: {":method", ":authority", ":scheme", ":path"},
+	// }
+
+	// return client.Do(req)
 }
 
 func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
