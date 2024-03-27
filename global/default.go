@@ -21,5 +21,6 @@ var (
 	HttpClientTimeout = 30 * time.Second
 	ConfigCache       syncx.Map[string, string]
 	URLCache          syncx.Map[string, *model.LiveInfo]
+	ChannelCache      syncx.Map[uint, model.Channel]
 	M3U8Cache         = cache.New(3*time.Second, 10*time.Second)
 )

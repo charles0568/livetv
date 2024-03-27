@@ -7,6 +7,7 @@ type Channel struct {
 	URL    string
 	Parser string
 	Proxy  bool
+	Token  string
 	Extra  string
 }
 

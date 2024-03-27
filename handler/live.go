@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +23,16 @@ import (
 )
 
 func M3UHandler(c *gin.Context) {
+	disableProtection := os.Getenv("LIVETV_FREEACCESS") == "1"
+	// verify token against the unique token of the requested channel
+	if !disableProtection {
+		token := c.Query("token")
+		if token != global.GetSecretToken() { // invalid token
+			c.String(http.StatusForbidden, "Forbidden")
+			return
+		}
+	}
+
 	content, err := service.M3UGenerate()
 	if err != nil {
 		log.Println(err)
@@ -50,8 +62,28 @@ func LivePreHandler(c *gin.Context) {
 }
 
 func LiveHandler(c *gin.Context) {
-	var m3u8Body string
 	channelCacheKey := c.Query("c")
+	disableProtection := os.Getenv("LIVETV_FREEACCESS") == "1"
+	// verify token against the unique token of the requested channel
+	if !disableProtection {
+		token := c.Query("token")
+		channelNumber, err := strconv.Atoi(channelCacheKey)
+		if err != nil { // invalid channel id format
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+		ch, err := service.GetChannel(uint(channelNumber))
+		if err != nil { // non-existent channel
+			c.AbortWithError(http.StatusBadRequest, err)
+			return
+		}
+		if token != ch.Token { // invalid token
+			c.String(http.StatusForbidden, "Forbidden")
+			return
+		}
+	}
+
+	var m3u8Body string
 	iBody, found := global.M3U8Cache.Get(channelCacheKey)
 	if found {
 		m3u8Body = iBody.(string)
@@ -115,7 +147,7 @@ func LiveHandler(c *gin.Context) {
 					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE:VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 				}
 			}
-			m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=", channelInfo.Proxy)
+			m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
 			// if channelInfo.Proxy {
 			// 	m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
 			// } else {
@@ -128,6 +160,16 @@ func LiveHandler(c *gin.Context) {
 }
 
 func TsProxyHandler(c *gin.Context) {
+	// verify access token if protection is enabled (by default)
+	disableProtection := os.Getenv("LIVETV_FREEACCESS") == "1"
+	if !disableProtection {
+		token := c.Query("token")
+		if token != global.GetLiveToken() {
+			c.String(http.StatusForbidden, "Forbidden")
+			return
+		}
+	}
+
 	zipedRemoteURL := c.Query("k")
 	remoteURL, err := util.DecompressString(zipedRemoteURL)
 	if err != nil {

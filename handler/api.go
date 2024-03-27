@@ -3,13 +3,13 @@ package handler
 import (
 	"embed"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
@@ -61,24 +61,19 @@ func IndexHandler(c *gin.Context) {
 
 func loadConfig() (Config, error) {
 	var conf Config
-	if cmd, err := global.GetConfig("ytdl_cmd"); err != nil {
-		return conf, err
-	} else {
+	if cmd, err := global.GetConfig("ytdl_cmd"); err == nil {
 		conf.Cmd = cmd
 	}
-	if args, err := global.GetConfig("ytdl_args"); err != nil {
-		return conf, err
-	} else {
+	if args, err := global.GetConfig("ytdl_args"); err == nil {
 		conf.Args = args
 	}
-	if burl, err := global.GetConfig("base_url"); err != nil {
-		return conf, err
-	} else {
+	if burl, err := global.GetConfig("base_url"); err == nil {
 		conf.BaseURL = burl
 	}
-	if apiKey, err := global.GetConfig("apiKey"); err != nil {
-		return conf, err
-	} else {
+	if secret, err := global.GetConfig("secret"); err == nil {
+		conf.Secret = secret
+	}
+	if apiKey, err := global.GetConfig("apiKey"); err == nil {
 		conf.ApiKey = apiKey
 	}
 	return conf, nil
@@ -130,7 +125,7 @@ func ChannelListHandler(c *gin.Context) {
 	channels[0] = Channel{
 		ID:   0,
 		Name: "playlist",
-		M3U8: baseUrl + "/lives.m3u",
+		M3U8: fmt.Sprintf("%s/lives.m3u?token=%s", baseUrl, global.GetSecretToken()),
 	}
 	for i, v := range channelModels {
 		status := service.GetStatus(v.URL)
@@ -139,7 +134,7 @@ func ChannelListHandler(c *gin.Context) {
 			Name:       v.Name,
 			URL:        v.URL,
 			Parser:     v.Parser,
-			M3U8:       baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
+			M3U8:       fmt.Sprintf("%s/live.m3u8?token=%s&c=%d", baseUrl, v.Token, v.ID),
 			Proxy:      v.Proxy,
 			LastUpdate: status.Time.Format("2006-01-02 15:04:05"),
 			Status:     status.Status,
@@ -263,6 +258,7 @@ func UpdateConfigHandler(c *gin.Context) {
 	ytdlArgs := c.PostForm("args")
 	baseUrl := strings.TrimSuffix(c.PostForm("baseurl"), "/")
 	apiKey := strings.TrimSpace(c.PostForm("apikey"))
+	secret := strings.TrimSpace(c.PostForm("secret"))
 	if len(ytdlCmd) > 0 {
 		err := global.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
@@ -288,6 +284,8 @@ func UpdateConfigHandler(c *gin.Context) {
 		}
 	}
 	global.SetConfig("apiKey", apiKey)
+	global.SetConfig("secret", secret)
+	global.ClearSecretToken()
 	c.String(http.StatusOK, "")
 }
 

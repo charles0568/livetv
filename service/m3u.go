@@ -29,10 +29,7 @@ func M3UGenerate() (string, error) {
 		}
 		liveData := fmt.Sprintf("#EXTINF:-1, tvg-name=%s tvg-logo=%s group-title=\"LiveTV\", %s\n", strconv.Quote(v.Name), strconv.Quote(logo), v.Name)
 		m3u.WriteString(liveData)
-		m3u.WriteString(baseUrl)
-		m3u.WriteString("/live.m3u8?c=")
-		m3u.WriteString(strconv.Itoa(int(v.ID)))
-		m3u.WriteString("\n")
+		m3u.WriteString(fmt.Sprintf("%s/live.m3u8?token=%s&c=%d\n", baseUrl, v.Token, v.ID))
 	}
 	return m3u.String(), nil
 }

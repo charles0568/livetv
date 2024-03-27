@@ -38,6 +38,7 @@ func demo() {
 func main() {
 	pwd := flag.String("pwd", "", "reset password")
 	listen := flag.String("listen", ":9000", "listening address")
+	disableProtection := flag.Bool("disable-protection", false, "temporarily disable token protection")
 	flag.Parse()
 	datadir := os.Getenv("LIVETV_DATADIR")
 	if datadir == "" {
@@ -63,6 +64,10 @@ func main() {
 			log.Println("Failed to reset password:", err.Error())
 		}
 		return
+	}
+
+	if *disableProtection {
+		os.Setenv("LIVETV_FREEACCESS", "1")
 	}
 
 	binding := os.Getenv("LIVETV_LISTEN")

@@ -17,4 +17,5 @@ type Config struct {
 	Cmd     string `json:"cmd"`
 	Args    string `json:"args"`
 	ApiKey  string `json:"apikey"`
+	Secret  string `json:"secret"`
 }

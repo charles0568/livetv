@@ -19,35 +19,9 @@ var errNoMatchFound error = errors.New("This channel is not currently live")
 
 const DefaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
-/*
-func checkAndUpdateExpiringM3U8(youtubeURL string, liveURL string) (expired bool) {
-	regex := regexp.MustCompile(`/expire/(\d+)/`)
-	matched := regex.FindStringSubmatch(liveURL)
-	if len(matched) < 2 {
-		return false
-	}
-	expireTime := time.Unix(util.String2Int64(matched[1]), 0)
-	if time.Now().After(expireTime) { // already expired, update before replying to clients
-		global.URLCache.Delete(youtubeURL)
-		UpdateURLCacheSingle(youtubeURL)
-		return true
-	} else if time.Now().Add(time.Minute * 6).After(expireTime) {
-		go UpdateURLCacheSingle(youtubeURL) // update async
-	}
-	return false
-}*/
-
 func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 	liveInfo, ok := global.URLCache.Load(youtubeURL)
 	if ok {
-		// check and refresh expired/expiring feed
-		/*if checkAndUpdateExpiringM3U8(youtubeURL, liveURL) {
-			// expired link, should load liveUrl again
-			liveURL, ok = global.URLCache.Load(youtubeURL)
-			if !ok {
-				return "", "", errNoMatchFound
-			}
-		}*/
 		return liveInfo.LiveUrl, liveInfo.Logo, nil
 	} else {
 		log.Println("cache miss", youtubeURL)
