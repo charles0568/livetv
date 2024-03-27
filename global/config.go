@@ -55,7 +55,7 @@ func GetLiveToken() string {
 			return ""
 		}
 		derived := strongKey(secret+"_live")
-		strongLiveSecret = string([]rune(base64.StdEncoding.EncodeToString(derived))[1:10])
+		strongLiveSecret = string([]rune(base64.URLEncoding.EncodeToString(derived))[1:10])
 	}
 	return strongLiveSecret
 }
