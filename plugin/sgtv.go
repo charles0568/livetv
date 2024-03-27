@@ -181,6 +181,7 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 				}
 				li := &model.LiveInfo{}
 				li.LiveUrl = liveUrl
+    li.Logo = chInfo.Cover
 				return li, nil
 			}
 		}
