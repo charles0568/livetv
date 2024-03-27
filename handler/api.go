@@ -162,6 +162,7 @@ func NewChannelHandler(c *gin.Context) {
 		URL:    chURL,
 		Proxy:  chProxy,
 		Parser: chParser,
+		Token:  service.GenerateToken(8),
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -191,6 +192,11 @@ func UpdateChannelHandler(c *gin.Context) {
 		c.String(http.StatusInternalServerError, "empty id")
 		return
 	}
+	channel, err := service.GetChannel(chID)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	chParser := c.PostForm("parser")
@@ -199,14 +205,11 @@ func UpdateChannelHandler(c *gin.Context) {
 		return
 	}
 	chProxy := c.PostForm("proxy") == "true"
-	mch := model.Channel{
-		ID:     chID,
-		Name:   chName,
-		URL:    chURL,
-		Proxy:  chProxy,
-		Parser: chParser,
-	}
-	err := service.SaveChannel(mch)
+	channel.Name = chName
+	channel.Parser = chParser
+	channel.Proxy = chProxy
+	channel.URL = chURL
+	err = service.SaveChannel(channel)
 	if err != nil {
 		log.Println(err.Error())
 		c.String(http.StatusInternalServerError, err.Error())

@@ -43,7 +43,7 @@ func GetSecretToken() string {
 			return ""
 		}
 		derived := strongKey(secret)
-		strongSecret = string([]rune(base64.StdEncoding.EncodeToString(derived))[1:10])
+		strongSecret = string([]rune(base64.URLEncoding.EncodeToString(derived))[1:10])
 	}
 	return strongSecret
 }

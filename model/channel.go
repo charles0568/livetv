@@ -8,7 +8,6 @@ type Channel struct {
 	Parser string
 	Proxy  bool
 	Token  string
-	Extra  string
 }
 
 type LiveInfo struct {

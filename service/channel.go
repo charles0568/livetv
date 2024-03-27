@@ -18,7 +18,7 @@ func UpdateChannelDB() {
 	if err == nil {
 		for _, v := range channels {
 			if v.Token == "" {
-				v.Token = generateToken(8)
+				v.Token = GenerateToken(8)
 				SaveChannel(v)
 			}
 		}
@@ -46,7 +46,7 @@ func GetChannel(channelNumber uint) (channel model.Channel, err error) {
 	return
 }
 
-func generateToken(length int) string {
+func GenerateToken(length int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
