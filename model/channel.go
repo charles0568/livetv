@@ -7,7 +7,7 @@ type Channel struct {
 	URL    string
 	Parser string
 	Proxy  bool
-	Token  string
+	Token  string `gorm:"-:all"`
 }
 
 type LiveInfo struct {

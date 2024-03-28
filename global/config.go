@@ -63,6 +63,7 @@ func GetLiveToken() string {
 func ClearSecretToken() {
 	strongSecret = ""
 	strongLiveSecret = ""
+	ChannelCache.Clear()
 }
 
 func SetConfig(key, value string) error {

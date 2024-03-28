@@ -1,7 +1,9 @@
 package service
 
 import (
-	"crypto/rand"
+	"crypto/md5"
+	"encoding/base64"
+	"fmt"
 
 	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/model"
@@ -9,20 +11,18 @@ import (
 
 func GetAllChannel() (channels []model.Channel, err error) {
 	err = global.DB.Find(&channels).Error
-	return
-}
-
-func UpdateChannelDB() {
-	var channels []model.Channel
-	err := global.DB.Find(&channels).Error
 	if err == nil {
-		for _, v := range channels {
-			if v.Token == "" {
-				v.Token = GenerateToken(8)
-				SaveChannel(v)
+		// update all channel info to the cache
+		for i := range channels {
+			if ch, ok := global.ChannelCache.Load(channels[i].ID); ok {
+				channels[i].Token = ch.Token
+			} else {
+				channels[i].Token = generateToken(channels[i].ID)
+				global.ChannelCache.Store(channels[i].ID, channels[i])
 			}
 		}
 	}
+	return
 }
 
 func SaveChannel(channel model.Channel) error {
@@ -41,19 +41,20 @@ func GetChannel(channelNumber uint) (channel model.Channel, err error) {
 	}
 	err = global.DB.Where("id = ?", channelNumber).First(&channel, channelNumber).Error
 	if err == nil {
+		channel.Token = generateToken(channelNumber)
 		global.ChannelCache.Store(channelNumber, channel)
 	}
 	return
 }
 
-func GenerateToken(length int) string {
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
+const SALT string = "LiVeTv"
+
+func generateToken(channelNumber uint) string {
+	secret := global.GetSecretToken()
+	if secret == "" {
 		return ""
 	}
-	for i, b := range bytes {
-		bytes[i] = chars[b%byte(len(chars))]
-	}
-	return string(bytes)
+	text := fmt.Sprintf("%s_%s_%d", secret, SALT, channelNumber)
+	hash := md5.Sum([]byte(text))
+	return base64.URLEncoding.EncodeToString(hash[:])[1:10]
 }

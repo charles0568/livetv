@@ -11,7 +11,6 @@ import (
 var updateConcurrent = make(chan bool, 2) // allow up to 2 urls to be updated simultaneously
 
 func LoadChannelCache() {
-	UpdateChannelDB() // update database structure
 	channels, err := GetAllChannel()
 	if err != nil {
 		log.Println(err)

@@ -162,7 +162,6 @@ func NewChannelHandler(c *gin.Context) {
 		URL:    chURL,
 		Proxy:  chProxy,
 		Parser: chParser,
-		Token:  service.GenerateToken(8),
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
