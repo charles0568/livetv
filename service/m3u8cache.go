@@ -2,13 +2,10 @@ package service
 
 import (
 	"log"
-	"regexp"
-	"time"
 
 	"github.com/zjyl1994/livetv/model"
 
 	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/util"
 )
 
 var updateConcurrent = make(chan bool, 2) // allow up to 2 urls to be updated simultaneously
@@ -50,18 +47,16 @@ func UpdateURLCache() {
 		log.Println(err)
 		return
 	}
+	urlcache := make(map[string]bool)
+	for _, v := range channels {
+		urlcache[v.URL] = true
+	}
+	// delete urlcaches that we do not serve anymore
 	global.URLCache.Range(func(k string, info *model.LiveInfo) bool {
-		regex := regexp.MustCompile(`/expire/(\d+)/`)
-		matched := regex.FindStringSubmatch(info.LiveUrl)
-		if len(matched) < 2 {
+		if _, ok := urlcache[k]; !ok {
 			global.URLCache.Delete(k)
 			DeleteStatus(k)
 			return true
-		}
-		expireTime := time.Unix(util.String2Int64(matched[1]), 0)
-		if time.Now().Add(time.Hour * 4).After(expireTime) {
-			global.URLCache.Delete(k)
-			DeleteStatus(k)
 		}
 		return true
 	})
