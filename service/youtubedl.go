@@ -2,15 +2,11 @@ package service
 
 import (
 	"errors"
-	"io"
 	"log"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/zjyl1994/livetv/model"
 
-	"github.com/grafov/m3u8"
 	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/plugin"
 )
@@ -36,52 +32,6 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 			return "", "", errors.New("parser cooling down")
 		}
 	}
-}
-
-func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, error) {
-	var playlist io.Reader
-	if len(content) > 0 {
-		playlist = content[0]
-	} else {
-		client := http.Client{
-			Timeout: time.Second * 10,
-		}
-		req, err := http.NewRequest("GET", masterUrl, nil)
-		req.Header.Set("User-Agent", DefaultUserAgent)
-		resp, err := client.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-		if resp.ContentLength > 10*1024*1024 || !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
-			return "", errors.New("invalid url")
-		}
-		playlist = resp.Body
-	}
-	p, listType, err := m3u8.DecodeFrom(playlist, true)
-	if err != nil {
-		return "", err
-	}
-	switch listType {
-	case m3u8.MEDIA:
-		{
-			return masterUrl, nil
-		}
-	case m3u8.MASTER:
-		{
-			masterpl := p.(*m3u8.MasterPlaylist)
-			selectedUrl := ""
-			selectedBw := uint32(0)
-			for _, v := range masterpl.Variants {
-				if v.Bandwidth >= selectedBw {
-					selectedUrl = v.URI
-					selectedBw = v.Bandwidth
-				}
-			}
-			return selectedUrl, nil
-		}
-	}
-	return "", errors.New("Unknown type of playlist")
 }
 
 func RealLiveM3U8(liveUrl string, Parser string) (*model.LiveInfo, error) {

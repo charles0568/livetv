@@ -43,6 +43,9 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 			Timeout: time.Second * 10,
 		}
 		req, err := http.NewRequest("GET", masterUrl, nil)
+		if err != nil {
+			return "", err
+		}
 		req.Header.Set("User-Agent", DefaultUserAgent)
 		resp, err := client.Do(req)
 		if err != nil {

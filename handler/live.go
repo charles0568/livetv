@@ -117,7 +117,12 @@ func LiveHandler(c *gin.Context) {
 			m3u8Body = service.PlaceHolderHLS() // make a fake m3u8 pointing to the target
 		} else {
 			client := http.Client{Timeout: global.HttpClientTimeout}
-			req, _ := http.NewRequest(http.MethodGet, liveM3U8, nil)
+			req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
+			if err != nil {
+				log.Println(err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
 			req.Header.Set("User-Agent", service.DefaultUserAgent)
 			resp, err := client.Do(req)
 			if err != nil {

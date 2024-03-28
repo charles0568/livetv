@@ -28,6 +28,9 @@ func (p *FTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, err
 		Timeout: time.Second * 10,
 	}
 	req, err := http.NewRequest("GET", liveUrl, nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {

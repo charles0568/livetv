@@ -26,6 +26,9 @@ func isLive(m3u8Url string) bool {
 		Timeout: time.Second * 10,
 	}
 	req, err := http.NewRequest("GET", m3u8Url, nil)
+	if err != nil {
+		return false
+	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -46,6 +49,9 @@ func parseUrl(liveUrl string) (*model.LiveInfo, error) {
 		Timeout: time.Second * 10,
 	}
 	req, err := http.NewRequest("GET", liveUrl, nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {

@@ -159,6 +159,9 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	encodedBody, _ := p.encrypt(body, iv) // encrypt our request
 	formData := url.Values{"value": {encodedBody}}
 	req, err := http.NewRequest(http.MethodPost, sgtvAPI, bytes.NewReader([]byte(formData.Encode())))
+	if err != nil {
+		return nil, err
+	}
 	resp, err := cloudScraper(req)
 	if err != nil {
 		return nil, err
@@ -181,7 +184,7 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 				}
 				li := &model.LiveInfo{}
 				li.LiveUrl = liveUrl
-    li.Logo = chInfo.Cover
+				li.Logo = chInfo.Cover
 				return li, nil
 			}
 		}
