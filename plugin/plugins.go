@@ -58,7 +58,8 @@ func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, err
 		playlist = resp.Body
 	}
 	p, listType, err := m3u8.DecodeFrom(playlist, true)
-	if err != nil {
+	// log.Println("parsed playlist", p == nil, listType, err)
+	if p == nil {
 		return "", err
 	}
 	switch listType {

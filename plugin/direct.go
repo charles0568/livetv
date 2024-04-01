@@ -30,7 +30,7 @@ func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveIn
 	defer resp.Body.Close()
 	// the link itself is a valid M3U8
 	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
-		log.Println(liveUrl, "is valid url")
+		log.Println(liveUrl, "is a valid url")
 		liveUrl, err := bestFromMasterPlaylist(liveUrl, resp.Body) // extract the best quality live url from the master playlist
 		if err == nil {
 			li := &model.LiveInfo{}
