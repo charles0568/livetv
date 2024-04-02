@@ -18,7 +18,7 @@ var defaultConfigValue = map[string]string{
 }
 
 var (
-	HttpClientTimeout = 30 * time.Second
+	HttpClientTimeout = 10 * time.Second
 	ConfigCache       syncx.Map[string, string]
 	URLCache          syncx.Map[string, *model.LiveInfo]
 	ChannelCache      syncx.Map[uint, model.Channel]
