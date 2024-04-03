@@ -25,6 +25,8 @@ type ThePaperPlayInfo struct {
 type ThePaperContent struct {
 	NowPlay  ThePaperPlayInfo `json:"nowPlay"`
 	NextPlay ThePaperPlayInfo `json:"nextPlay"`
+	NextTime int64            `json:"nextTime"`
+	ImgUrl   string           `json:"imgUrl"`
 }
 
 type ThePaperResponse struct {
@@ -58,7 +60,7 @@ func (p *ThePaperParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo
 	if json.Unmarshal(content, &paperResp) == nil && paperResp.Code == 200 {
 		li := &model.LiveInfo{}
 		li.LiveUrl = paperResp.Data.NowPlay.Url
-		li.Logo = paperResp.Data.NowPlay.CoverUrl
+		li.Logo = paperResp.Data.ImgUrl
 		if global.IsValidURL(li.LiveUrl) {
 			return li, nil
 		}
