@@ -61,6 +61,16 @@ func LivePreHandler(c *gin.Context) {
 	c.Data(http.StatusOK, "application/vnd.apple.mpegurl", []byte(nil))
 }
 
+func handleNonHTTPProtocol(m3u8url string, c *gin.Context) (handled bool) {
+	handled = false
+	u, err := url.Parse(m3u8url)
+	if err == nil && !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
+		c.Redirect(http.StatusFound, m3u8url)
+		handled = true
+	}
+	return
+}
+
 func LiveHandler(c *gin.Context) {
 	channelCacheKey := c.Query("c")
 	disableProtection := os.Getenv("LIVETV_FREEACCESS") == "1"
@@ -116,6 +126,10 @@ func LiveHandler(c *gin.Context) {
 			// return a placeholder video
 			m3u8Body = service.PlaceHolderHLS() // make a fake m3u8 pointing to the target
 		} else {
+			// handle non http protocols like rtsp, rtmp and etc.
+			if handleNonHTTPProtocol(liveM3U8, c) {
+				return
+			}
 			client := http.Client{Timeout: global.HttpClientTimeout}
 			req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
 			if err != nil {

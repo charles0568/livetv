@@ -4,6 +4,7 @@ package plugin
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -14,6 +15,14 @@ import (
 type DirectM3U8Parser struct{}
 
 func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+	u, err := url.Parse(liveUrl)
+	// return non http protocol directly
+	if err == nil && !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
+		li := &model.LiveInfo{}
+		li.LiveUrl = liveUrl
+		return li, nil
+	}
+
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
