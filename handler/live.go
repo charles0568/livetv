@@ -2,9 +2,7 @@ package handler
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -130,41 +128,11 @@ func LiveHandler(c *gin.Context) {
 			if handleNonHTTPProtocol(liveM3U8, c) {
 				return
 			}
-			client := http.Client{Timeout: global.HttpClientTimeout}
-			req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
-			if err != nil {
+			bodyString, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.Parser)
+			if bodyString == "" {
 				log.Println(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
-			}
-			req.Header.Set("User-Agent", service.DefaultUserAgent)
-			resp, err := client.Do(req)
-			if err != nil {
-				log.Println(err)
-				c.AbortWithStatus(http.StatusInternalServerError)
-				return
-			}
-
-			bodyString := ""
-			defer resp.Body.Close()
-			if resp.ContentLength < 10*1024*1024 && strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
-				bodyBytes, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					log.Println(err)
-					c.AbortWithStatus(http.StatusInternalServerError)
-					return
-				}
-				bodyString = string(bodyBytes)
-			} else {
-				service.UpdateStatus(channelInfo.URL, service.Warning, "Url is not a live stream")
-				duration, err := service.GetVideoDuration(channelInfo.URL)
-				if err == nil && duration > 0 {
-					log.Println(channelInfo.URL, "duration is", duration)
-					bodyString = fmt.Sprintf("#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:%.0f\n#EXT-X-PLAYLIST-TYPE:VOD\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:%.4f, video\n%s\n#EXT-X-ENDLIST", duration, duration, liveM3U8)
-				} else {
-					log.Println("failed to get duration", err.Error())
-					bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE:VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
-				}
 			}
 			m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
 			// if channelInfo.Proxy {

@@ -20,6 +20,10 @@ type Plugin interface {
 	Parse(liveUrl string, lastInfo string) (info *model.LiveInfo, error error)
 }
 
+type HealthCheck interface {
+	Check(content string) error
+}
+
 var (
 	pluginCenter  map[string]Plugin = make(map[string]Plugin)
 	NoMatchPlugin error             = errors.New("No matching plugin found")

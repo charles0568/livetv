@@ -104,6 +104,13 @@ func parseUrl(liveUrl string) (*model.LiveInfo, error) {
 	return nil, NoMatchFeed
 }
 
+func (p *YoutubeParser) Check(content string) error {
+	if strings.Contains(content, "EXT-X-ENDLIST") {
+		return errors.New("live ended")
+	}
+	return nil
+}
+
 func (p *YoutubeParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
 	var info YoutubeExtraInfo
 	json.Unmarshal([]byte(lastInfo), &info)
