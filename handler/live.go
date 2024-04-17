@@ -117,6 +117,10 @@ func LiveHandler(c *gin.Context) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
+		proxyUrl, _ := global.GetConfig("proxy_url")
+		if proxyUrl == "" {
+			proxyUrl = baseUrl
+		}
 		liveM3U8, _, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.Parser)
 		if err != nil {
 			log.Println(err)
@@ -134,7 +138,7 @@ func LiveHandler(c *gin.Context) {
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
+			m3u8Body = service.M3U8Process(liveM3U8, bodyString, proxyUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
 			// if channelInfo.Proxy {
 			// 	m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
 			// } else {

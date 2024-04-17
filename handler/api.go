@@ -76,6 +76,9 @@ func loadConfig() (Config, error) {
 	if apiKey, err := global.GetConfig("apiKey"); err == nil {
 		conf.ApiKey = apiKey
 	}
+	if proxy, err := global.GetConfig("proxy_url"); err == nil {
+		conf.ProxyURL = proxy
+	}
 	return conf, nil
 }
 
@@ -261,6 +264,7 @@ func UpdateConfigHandler(c *gin.Context) {
 	baseUrl := strings.TrimSuffix(c.PostForm("baseurl"), "/")
 	apiKey := strings.TrimSpace(c.PostForm("apikey"))
 	secret := strings.TrimSpace(c.PostForm("secret"))
+	proxyUrl := strings.TrimSuffix(c.PostForm("proxyurl"), "/")
 	if len(ytdlCmd) > 0 {
 		err := global.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
@@ -285,6 +289,7 @@ func UpdateConfigHandler(c *gin.Context) {
 			return
 		}
 	}
+	global.SetConfig("proxy_url", proxyUrl)
 	global.SetConfig("apiKey", apiKey)
 	global.SetConfig("secret", secret)
 	global.ClearSecretToken()
