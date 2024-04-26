@@ -39,6 +39,24 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 }
 
 func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, error) {
+	retry := func(bodyString string, err error) (string, error) {
+		if GetStatus(ChannelURL).Status == Ok {
+			// this channel was previously running ok, we give it a chance to reparse itself
+			log.Println(ChannelURL, "is unhealthy, doing a reparse...")
+			if li, err := UpdateURLCacheSingle(ChannelURL, Parser); err == nil {
+				UpdateStatus(ChannelURL, Warning, "Unhealthy")
+				bodyString, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
+				if err == nil {
+					log.Println(ChannelURL, "is back online now")
+					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
+				} else {
+					log.Println(ChannelURL, "is still unhealthy, giving up, currently pointing to", liveM3U8)
+				}
+				// if error still persists after a reparse, keep our warning status so that we won't endlessly reparse the same feed
+			}
+		}
+		return bodyString, err
+	}
 	client := http.Client{Timeout: global.HttpClientTimeout}
 	req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
 	if err != nil {
@@ -48,7 +66,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return retry("", err)
 	}
 
 	bodyString := ""
@@ -64,25 +82,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 			if checker, ok := p.(plugin.HealthCheck); ok {
 				healthErr := checker.Check(bodyString)
 				if healthErr != nil {
-					if GetStatus(ChannelURL).Status == Ok {
-						// this channel was previously running ok, we give it a chance to reparse itself
-						log.Println(ChannelURL, "is unhealthy, doing a reparse...")
-						if li, err := UpdateURLCacheSingle(ChannelURL, Parser); err == nil {
-							UpdateStatus(ChannelURL, Warning, "Unhealthy")
-							bodyString, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
-							if err == nil {
-								log.Println(ChannelURL, "is back online now")
-								UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
-							} else {
-								log.Println(ChannelURL, "is still unhealthy, giving up, currently pointing to", liveM3U8)
-							}
-							// if error still persists after a reparse, keep our warning status so that we won't endlessly reparse the same feed
-						}
-					} else {
-						// the channel is unhealthy previously and retried, will do nothing to it.
-						// just output the unhealthy content
-						return bodyString, healthErr
-					}
+					return retry(bodyString, healthErr)
 				}
 			}
 		}
