@@ -66,7 +66,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return retry("", err)
+		return "", err
 	}
 
 	bodyString := ""
@@ -77,7 +77,11 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 			return "", err
 		}
 		bodyString = string(bodyBytes)
-		// do health check
+		// retry on server status error
+		if resp.StatusCode != http.StatusOK {
+			return retry(bodyString, errors.New(fmt.Sprintf("Server response: HTTP %d", resp.StatusCode)))
+		}
+		// retry on custom health check error
 		if p, err := plugin.GetPlugin(Parser); err == nil {
 			if checker, ok := p.(plugin.HealthCheck); ok {
 				healthErr := checker.Check(bodyString)
