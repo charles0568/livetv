@@ -20,6 +20,10 @@ type Plugin interface {
 	Parse(liveUrl string, lastInfo string) (info *model.LiveInfo, error error)
 }
 
+type Transformer interface {
+	Transform(playList string, lastInfo string) (string, error)
+}
+
 type HealthCheck interface {
 	Check(content string) error
 }

@@ -57,8 +57,20 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 		}
 		return bodyString, err
 	}
+
+	// allow plugins to decorate the m3u8 url
+	decoraUrl := liveM3U8
+	if p, err := plugin.GetPlugin(Parser); err == nil {
+		if transformer, ok := p.(plugin.Transformer); ok {
+			if li, ok := global.URLCache.Load(ChannelURL); ok {
+				decoraUrl, _ = transformer.Transform(liveM3U8, li.ExtraInfo)
+				log.Println("transformed", liveM3U8, "=>", decoraUrl)
+			}
+		}
+	}
+
 	client := http.Client{Timeout: global.HttpClientTimeout}
-	req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
+	req, err := http.NewRequest(http.MethodGet, decoraUrl, nil)
 	if err != nil {
 		log.Println(err)
 		return "", err
