@@ -48,6 +48,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 			if li, err := UpdateURLCacheSingle(ChannelURL, Parser); err == nil {
 				UpdateStatus(ChannelURL, Warning, "Unhealthy")
 				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
+				log.Println("new url!", newUrl)
 				if err == nil {
 					log.Println(ChannelURL, "is back online now")
 					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
