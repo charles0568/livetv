@@ -38,14 +38,16 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 	}
 }
 
-func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, error) {
-	retry := func(bodyString string, err error) (string, error) {
+// returns: content, updated m3u8url (if needed), error
+func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, string, error) {
+	retry := func(bodyString string, err error) (string, string, error) {
+		newUrl := liveM3U8
 		if GetStatus(ChannelURL).Status == Ok {
 			// this channel was previously running ok, we give it a chance to reparse itself
 			log.Println(ChannelURL, "is unhealthy, doing a reparse...")
 			if li, err := UpdateURLCacheSingle(ChannelURL, Parser); err == nil {
 				UpdateStatus(ChannelURL, Warning, "Unhealthy")
-				bodyString, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
+				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
 				if err == nil {
 					log.Println(ChannelURL, "is back online now")
 					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
@@ -55,7 +57,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 				// if error still persists after a reparse, keep our warning status so that we won't endlessly reparse the same feed
 			}
 		}
-		return bodyString, err
+		return bodyString, newUrl, err
 	}
 
 	li, _ := global.URLCache.Load(ChannelURL)
@@ -75,12 +77,12 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 	req, err := http.NewRequest(http.MethodGet, decoraUrl, nil)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return "", liveM3U8, err
 	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", liveM3U8, err
 	}
 
 	bodyString := ""
@@ -88,7 +90,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 	if resp.ContentLength < 10*1024*1024 && strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", err
+			return "", liveM3U8, err
 		}
 		bodyString = string(bodyBytes)
 		// retry on server status error
@@ -115,7 +117,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 			bodyString = "#EXTM3U\n#EXTINF:-1, video\n#EXT-X-PLAYLIST-TYPE:VOD\n" + liveM3U8 + "\n#EXT-X-ENDLIST" // make a fake m3u8 pointing to the target
 		}
 	}
-	return bodyString, nil
+	return bodyString, liveM3U8, nil
 }
 
 func RealLiveM3U8(liveUrl string, Parser string) (*model.LiveInfo, error) {

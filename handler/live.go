@@ -132,13 +132,14 @@ func LiveHandler(c *gin.Context) {
 			if handleNonHTTPProtocol(liveM3U8, c) {
 				return
 			}
-			bodyString, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.Parser)
+			// the GetM3U8Content will handle health-check, reparse, url decoration and etc. and returns the final result and the final url used
+			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.Parser)
 			if bodyString == "" {
 				log.Println(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			m3u8Body = service.M3U8Process(liveM3U8, bodyString, proxyUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
+			m3u8Body = service.M3U8Process(finalUrl, bodyString, proxyUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
 			// if channelInfo.Proxy {
 			// 	m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
 			// } else {
