@@ -134,11 +134,11 @@ func LiveHandler(c *gin.Context) {
 			}
 			// the GetM3U8Content will handle health-check, reparse, url decoration and etc. and returns the final result and the final url used
 			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.Parser)
-			if finalUrl != liveM3U8 {
-				log.Println("liveurl changed:", liveM3U8, finalUrl)
-			} else {
-				log.Println("liveurl unchanged")
-			}
+			// if finalUrl != liveM3U8 {
+			// 	log.Println("liveurl changed:", liveM3U8, finalUrl)
+			// } else {
+			// 	log.Println("liveurl unchanged")
+			// }
 			if bodyString == "" {
 				log.Println(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
