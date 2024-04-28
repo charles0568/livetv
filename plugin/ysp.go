@@ -235,8 +235,7 @@ func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
 	reg := regexp.MustCompile(`svrtime=(\d+)`)
 	if matches := reg.FindStringSubmatch(info.LiveUrl); matches != nil {
 		srvTime, _ := strconv.Atoi(matches[1])
-		log.Println("srvTime", srvTime)
-		if time.Now().Unix()-int64(srvTime) > 300 {
+		if time.Now().Unix()-int64(srvTime) > 270 {
 			log.Println("ysp playlist expired")
 			return errors.New("expired")
 		}
