@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -231,20 +232,13 @@ func (p *YSPParser) Transform_unused(playList string, lastInfo string) (string, 
 // check for playlist expiring.
 // ysp playurl only stays valid for 5min, after that, a threshold will be applied
 func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
-	/*reg := regexp.MustCompile(`svrtime=(\d+)`)
+	reg := regexp.MustCompile(`svrtime=(\d+)`)
 	if matches := reg.FindStringSubmatch(info.LiveUrl); matches != nil {
 		srvTime, _ := strconv.Atoi(matches[1])
 		if time.Now().Unix()-int64(srvTime) > 270 {
 			log.Println("ysp playlist expired")
 			return errors.New("expired")
 		}
-	}*/
-	client := http.Client{
-		Timeout: time.Second * 10,
-	}
-	if resp, err := client.Get("https://csapi.yangshipin.cn/voapi/omsot/serverTime"); err == nil {
-		resp.Body.Close()
-		log.Println("serverTime pinged")
 	}
 	return nil
 }
