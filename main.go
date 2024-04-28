@@ -1,16 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"crypto/cipher"
-	"crypto/des"
 	"crypto/tls"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -18,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
@@ -41,66 +33,6 @@ func demo() {
 	} else {
 		log.Println("liveurl:", li.LiveUrl)
 	}
-}
-
-type EncryptData struct {
-	Mver    string `json:"mver"`
-	Subver  string `json:"subver"`
-	Host    string `json:"host"`
-	Referer string `json:"referer"`
-	Canvas  string `json:"canvas"`
-}
-
-func PKCS5Padding(data []byte, blockSize int) []byte {
-	padding := blockSize - len(data)%blockSize
-	padText := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(data, padText...)
-}
-
-func doDes() {
-	padKey := func(key []byte, desiredLength int) []byte {
-		if len(key) >= desiredLength {
-			return key[:desiredLength]
-		}
-
-		padding := make([]byte, desiredLength-len(key))
-		return append(key, padding...)
-	}
-	// Encrypt data function
-	encryptDESede3CBC := func(plainText []byte, key string, iv string) (string, error) {
-		bKey, _ := base64.StdEncoding.DecodeString(key)
-		bIV, _ := base64.StdEncoding.DecodeString(iv)
-		block, err := des.NewTripleDESCipher(padKey(bKey, 24))
-		if err != nil {
-			fmt.Printf("init err: %s\r\n", err)
-			return "", err
-		}
-
-		blockSize := block.BlockSize()
-		paddedPlaintext := PKCS5Padding(plainText, blockSize)
-
-		// Encrypt with CBC mode
-		cipherText := make([]byte, len(paddedPlaintext))
-		encryptMode := cipher.NewCBCEncrypter(block, bIV)
-		encryptMode.CryptBlocks(cipherText, paddedPlaintext)
-
-		return strings.ToUpper(hex.EncodeToString(cipherText)), nil
-	}
-
-	metaData := EncryptData{
-		Mver:    "1",
-		Subver:  "1.2",
-		Host:    "www.yangshipin.cn/#/tv/home?pid=",
-		Referer: "",
-		Canvas:  "YSPANGLE(Intel,Intel(R)Iris(R)XeGraphics(0x000046A6)Direct3D11vs_5_0ps_5_0,D3D11)",
-	}
-	metaBytes, _ := json.Marshal(metaData)
-	encryptedHex, err := encryptDESede3CBC(metaBytes, "eCfOXZ/4/f9NEgM2MFIXSQ==", "Ylxh0nCZ9r0=")
-	if err != nil {
-		return
-	}
-	fmt.Println(encryptedHex)
-
 }
 
 func main() {

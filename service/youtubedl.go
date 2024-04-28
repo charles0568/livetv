@@ -58,11 +58,13 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 		return bodyString, err
 	}
 
+	li, _ := global.URLCache.Load(ChannelURL)
+
 	// allow plugins to decorate the m3u8 url
 	decoraUrl := liveM3U8
 	if p, err := plugin.GetPlugin(Parser); err == nil {
 		if transformer, ok := p.(plugin.Transformer); ok {
-			if li, ok := global.URLCache.Load(ChannelURL); ok {
+			if li != nil {
 				decoraUrl, _ = transformer.Transform(liveM3U8, li.ExtraInfo)
 				log.Println("transformed", liveM3U8, "=>", decoraUrl)
 			}
@@ -96,7 +98,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 		// retry on custom health check error
 		if p, err := plugin.GetPlugin(Parser); err == nil {
 			if checker, ok := p.(plugin.HealthCheck); ok {
-				healthErr := checker.Check(bodyString)
+				healthErr := checker.Check(bodyString, li)
 				if healthErr != nil {
 					return retry(bodyString, healthErr)
 				}

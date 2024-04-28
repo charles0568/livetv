@@ -11,15 +11,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/zjyl1994/livetv/model"
 )
 
-type YSPParser struct{}
+type YSPParser struct {
+	URLM3U8Parser
+}
 
 type YSPResponse struct {
 	Code int    `json:"code"`
@@ -107,7 +111,7 @@ func extractDESKV(code string) (string, string) {
 	return desKey, desIv
 }
 
-func (p *YSPParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *YSPParser) Parse_unused(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout: time.Second * 10,
 	}
@@ -202,7 +206,7 @@ func encryptDESede3CBC(plainText []byte, key string, iv string) (string, error) 
 	return strings.ToUpper(hex.EncodeToString(cipherText)), nil
 }
 
-func (p *YSPParser) Transform(playList string, lastInfo string) (string, error) {
+func (p *YSPParser) Transform_unused(playList string, lastInfo string) (string, error) {
 	var di DesInfo
 	err := json.Unmarshal([]byte(lastInfo), &di)
 
@@ -223,6 +227,21 @@ func (p *YSPParser) Transform(playList string, lastInfo string) (string, error) 
 		return playList, nil
 	}
 	return playList + "&revoi=" + encryptedHex + di.ExtendedParam, nil
+}
+
+// check for playlist expiring.
+// ysp playurl only stays valid for 5min, after that, a threshold will be applied
+func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
+	reg := regexp.MustCompile(`svrtime=(\d+)`)
+	if matches := reg.FindStringSubmatch(info.LiveUrl); matches != nil {
+		srvTime, _ := strconv.Atoi(matches[1])
+		log.Println("srvTime", srvTime)
+		if time.Now().Unix()-int64(srvTime) > 300 {
+			log.Println("ysp playlist expired")
+			return errors.New("expired")
+		}
+	}
+	return nil
 }
 
 func init() {

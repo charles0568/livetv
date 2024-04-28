@@ -25,7 +25,7 @@ type Transformer interface {
 }
 
 type HealthCheck interface {
-	Check(content string) error
+	Check(content string, info *model.LiveInfo) error
 }
 
 var (
