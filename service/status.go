@@ -7,9 +7,10 @@ import (
 )
 
 type StatusInfo struct {
-	Time   time.Time
-	Status int
-	Msg    string
+	Time       time.Time
+	RetryCount int
+	Status     int
+	Msg        string
 }
 
 const (
@@ -20,6 +21,8 @@ const (
 	Expired
 )
 
+const MaxRetryCount = 5
+
 var statusCache syncx.Map[any, *StatusInfo]
 
 func UpdateStatus(url any, status int, msg string) {
@@ -27,11 +30,17 @@ func UpdateStatus(url any, status int, msg string) {
 		c.Msg = msg
 		c.Status = status
 		c.Time = time.Now()
+		if status == Ok {
+			c.RetryCount = 0
+		} else {
+			c.RetryCount++
+		}
 	} else {
 		statusCache.Store(url, &StatusInfo{
-			Msg:    msg,
-			Status: status,
-			Time:   time.Now(),
+			Msg:        msg,
+			Status:     status,
+			RetryCount: 0,
+			Time:       time.Now(),
 		})
 	}
 }

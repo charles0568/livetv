@@ -17,11 +17,11 @@ func LoadChannelCache() {
 		return
 	}
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL, v.Parser)
+		UpdateURLCacheSingle(v.URL, v.Parser, true)
 	}
 }
 
-func UpdateURLCacheSingle(Url string, Parser string) (*model.LiveInfo, error) {
+func UpdateURLCacheSingle(Url string, Parser string, bUpdateStatus bool) (*model.LiveInfo, error) {
 	updateConcurrent <- true
 	defer func() {
 		<-updateConcurrent
@@ -34,7 +34,9 @@ func UpdateURLCacheSingle(Url string, Parser string) (*model.LiveInfo, error) {
 		log.Println("[LiveTV]", err)
 	} else {
 		global.URLCache.Store(Url, liveInfo)
-		UpdateStatus(Url, Ok, "Live!")
+		if bUpdateStatus {
+			UpdateStatus(Url, Ok, "Live!")
+		}
 		log.Println(Url, "cached")
 	}
 	return liveInfo, err
@@ -60,6 +62,6 @@ func UpdateURLCache() {
 		return true
 	})
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL, v.Parser)
+		UpdateURLCacheSingle(v.URL, v.Parser, true)
 	}
 }

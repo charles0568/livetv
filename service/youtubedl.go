@@ -27,7 +27,7 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)
 		if time.Now().Sub(status.Time) > time.Minute*2 {
-			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, Parser); err == nil {
+			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, Parser, true); err == nil {
 				return liveInfo.LiveUrl, liveInfo.Logo, nil
 			} else {
 				return "", "", err
@@ -39,16 +39,22 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 }
 
 // returns: content, updated m3u8url (if needed), error
-func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, string, error) {
+func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, flags ...bool) (string, string, error) {
+	// parse the optional flags
+	retryFlag := false
+	if len(flags) > 0 {
+		retryFlag = flags[0]
+	}
+
 	retry := func(bodyString string, err error) (string, string, error) {
 		newUrl := liveM3U8
-		if GetStatus(ChannelURL).Status == Ok {
+		chStatus := GetStatus(ChannelURL)
+		if !retryFlag && chStatus.RetryCount < MaxRetryCount {
 			// this channel was previously running ok, we give it a chance to reparse itself
 			log.Println(ChannelURL, "is unhealthy, doing a reparse...")
-			if li, err := UpdateURLCacheSingle(ChannelURL, Parser); err == nil {
+			if li, err := UpdateURLCacheSingle(ChannelURL, Parser, false); err == nil {
 				UpdateStatus(ChannelURL, Warning, "Unhealthy")
-				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser)
-				log.Println("new url!", newUrl)
+				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser, true)
 				if err == nil {
 					log.Println(ChannelURL, "is back online now")
 					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
@@ -88,16 +94,17 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string) (string, 
 
 	bodyString := ""
 	defer resp.Body.Close()
+	// retry on server status error
+	if resp.StatusCode != http.StatusOK {
+		return retry(bodyString, errors.New(fmt.Sprintf("Server response: HTTP %d", resp.StatusCode)))
+	}
+
 	if resp.ContentLength < 10*1024*1024 && strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return "", liveM3U8, err
 		}
 		bodyString = string(bodyBytes)
-		// retry on server status error
-		if resp.StatusCode != http.StatusOK {
-			return retry(bodyString, errors.New(fmt.Sprintf("Server response: HTTP %d", resp.StatusCode)))
-		}
 		// retry on custom health check error
 		if p, err := plugin.GetPlugin(Parser); err == nil {
 			if checker, ok := p.(plugin.HealthCheck); ok {
