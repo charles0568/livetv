@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	_ "github.com/fopina/net-proxy-httpconnect/proxy"
+	httpproxy "github.com/fopina/net-proxy-httpconnect/proxy"
 
 	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/model"
@@ -98,7 +98,9 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl 
 	}
 	if ProxyUrl != "" {
 		if u, err := url.Parse(ProxyUrl); err == nil {
-			dialer, _ = proxy.FromURL(u, dialer)
+			if d, err := proxy.FromURL(u, dialer); err == nil {
+				dialer = d
+			}
 		}
 	}
 	client := http.Client{
@@ -166,4 +168,8 @@ func RealLiveM3U8(liveUrl string, proxyUrl string, Parser string) (*model.LiveIn
 	} else {
 		return nil, err
 	}
+}
+
+func init() {
+	httpproxy.RegisterSchemes()
 }
