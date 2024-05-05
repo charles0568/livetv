@@ -118,7 +118,7 @@ func unpad(src []byte) []byte {
 }
 
 func cloudScraper(req *http.Request, proxyUrl string) (*freq.Response, error) {
-	client := freq.ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
+	client := freq.C().ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
 	if proxyUrl != "" {
 		client.SetDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
 			return transportWithProxy(proxyUrl).Dial(network, addr)
