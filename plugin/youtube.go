@@ -21,9 +21,9 @@ type YoutubeExtraInfo struct {
 	LastUrl string
 }
 
-func isLive(m3u8Url string, proxyUrl) bool {
+func isLive(m3u8Url string, proxyUrl string) bool {
 	client := http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
 		Transport: transportWithProxy(proxyUrl),
 	}
 	req, err := http.NewRequest("GET", m3u8Url, nil)
