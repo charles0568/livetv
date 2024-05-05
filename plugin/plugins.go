@@ -4,20 +4,25 @@ package plugin
 import (
 	"errors"
 	"io"
+	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/zjyl1994/livetv/global"
+	httpproxy "github.com/fopina/net-proxy-httpconnect/proxy"
+	"golang.org/x/net/proxy"
 
 	"github.com/dlclark/regexp2"
+	"github.com/zjyl1994/livetv/global"
 	"github.com/zjyl1994/livetv/model"
 
 	"github.com/grafov/m3u8"
 )
 
 type Plugin interface {
-	Parse(liveUrl string, lastInfo string) (info *model.LiveInfo, error error)
+	Parse(liveUrl string, proxyUrl string, lastInfo string) (info *model.LiveInfo, error error)
 }
 
 type Transformer interface {
@@ -37,6 +42,23 @@ var (
 const (
 	DefaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
+
+func transportWithProxy(proxyUrl string) *http.Transport {
+	d := &net.Dialer{
+		Timeout: time.Second * 5,
+	}
+	tr := &http.Transport{Dial: d.Dial}
+	if proxyUrl != "" {
+		if u, err := url.Parse(proxyUrl); err == nil {
+			if p, e := proxy.FromURL(u, d); e == nil {
+				tr.Dial = p.Dial
+			} else {
+				log.Println("Proxy setup error:", e)
+			}
+		}
+	}
+	return tr
+}
 
 func registerPlugin(name string, parser Plugin) {
 	pluginCenter[name] = parser
@@ -127,4 +149,8 @@ func GetPluginList() []string {
 		list = append(list, name)
 	}
 	return list
+}
+
+func init() {
+	httpproxy.RegisterSchemes()
 }

@@ -14,7 +14,7 @@ import (
 
 type DirectM3U8Parser struct{}
 
-func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
 	// return non http protocol directly
 	if err == nil && !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
@@ -24,7 +24,8 @@ func (p *DirectM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveIn
 	}
 
 	client := http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
+		Transport: transportWithProxy(proxyUrl),
 	}
 	req, err := http.NewRequest("GET", liveUrl, nil)
 	if err != nil {

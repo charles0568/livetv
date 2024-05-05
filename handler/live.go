@@ -11,11 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zjyl1994/livetv/model"
-
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/zjyl1994/livetv/global"
+	"github.com/zjyl1994/livetv/model"
 	"github.com/zjyl1994/livetv/service"
 	"github.com/zjyl1994/livetv/util"
 )
@@ -121,7 +120,7 @@ func LiveHandler(c *gin.Context) {
 		if proxyUrl == "" {
 			proxyUrl = baseUrl
 		}
-		liveM3U8, _, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.Parser)
+		liveM3U8, _, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.ProxyUrl, channelInfo.Parser)
 		if err != nil {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)
@@ -133,7 +132,7 @@ func LiveHandler(c *gin.Context) {
 				return
 			}
 			// the GetM3U8Content will handle health-check, reparse, url decoration and etc. and returns the final result and the final url used
-			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.Parser)
+			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.ProxyUrl, channelInfo.Parser)
 			// if finalUrl != liveM3U8 {
 			// 	log.Println("liveurl changed:", liveM3U8, finalUrl)
 			// } else {

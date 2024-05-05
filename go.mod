@@ -6,6 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/dlclark/regexp2 v1.10.0
+	github.com/fopina/net-proxy-httpconnect v0.0.0-20230320235234-11f65320b851
 	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.9.1
 	github.com/grafov/m3u8 v0.12.0

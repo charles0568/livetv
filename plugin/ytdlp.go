@@ -15,7 +15,7 @@ import (
 
 type YtDlpParser struct{}
 
-func (p *YtDlpParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *YtDlpParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	YtdlCmd, err := global.GetConfig("ytdl_cmd")
 	if err != nil {
 		log.Println(err)

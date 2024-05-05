@@ -5,21 +5,33 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/zjyl1994/livetv/model"
+	"golang.org/x/net/proxy"
+
+	_ "github.com/fopina/net-proxy-httpconnect/proxy"
 
 	"github.com/zjyl1994/livetv/global"
+	"github.com/zjyl1994/livetv/model"
 	"github.com/zjyl1994/livetv/plugin"
 )
+
+// A Dialer is a means to establish a connection.
+// Custom dialers should also implement ContextDialer.
+type Dialer interface {
+	// Dial connects to the given address via the proxy.
+	Dial(network, addr string) (c net.Conn, err error)
+}
 
 var errNoMatchFound error = errors.New("This channel is not currently live")
 
 const DefaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
-func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
+func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (string, string, error) {
 	liveInfo, ok := global.URLCache.Load(youtubeURL)
 	if ok {
 		return liveInfo.LiveUrl, liveInfo.Logo, nil
@@ -27,7 +39,7 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)
 		if time.Now().Sub(status.Time) > time.Minute*2 {
-			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, Parser, true); err == nil {
+			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, proxyUrl, Parser, true); err == nil {
 				return liveInfo.LiveUrl, liveInfo.Logo, nil
 			} else {
 				return "", "", err
@@ -39,7 +51,7 @@ func GetLiveM3U8(youtubeURL string, Parser string) (string, string, error) {
 }
 
 // returns: content, updated m3u8url (if needed), error
-func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, flags ...bool) (string, string, error) {
+func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl string, flags ...bool) (string, string, error) {
 	// parse the optional flags
 	retryFlag := false
 	if len(flags) > 0 {
@@ -52,9 +64,9 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, flags ...
 		if !retryFlag && chStatus.RetryCount < MaxRetryCount {
 			// this channel was previously running ok, we give it a chance to reparse itself
 			log.Println(ChannelURL, "is unhealthy, doing a reparse...")
-			if li, err := UpdateURLCacheSingle(ChannelURL, Parser, false); err == nil {
+			if li, err := UpdateURLCacheSingle(ChannelURL, ProxyUrl, Parser, false); err == nil {
 				UpdateStatus(ChannelURL, Warning, "Unhealthy")
-				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser, true)
+				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser, ProxyUrl, true)
 				if err == nil {
 					log.Println(ChannelURL, "is back online now")
 					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
@@ -80,7 +92,21 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, flags ...
 		}
 	}
 
-	client := http.Client{Timeout: global.HttpClientTimeout}
+	var dialer Dialer
+	dialer = &net.Dialer{
+		Timeout: time.Second * 5,
+	}
+	if ProxyUrl != "" {
+		if u, err := url.Parse(ProxyUrl); err == nil {
+			dialer, _ = proxy.FromURL(u, dialer)
+		}
+	}
+	client := http.Client{
+		Timeout: global.HttpClientTimeout,
+		Transport: &http.Transport{
+			Dial: dialer.Dial,
+		},
+	}
 	req, err := http.NewRequest(http.MethodGet, decoraUrl, nil)
 	if err != nil {
 		log.Println(err)
@@ -128,15 +154,15 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, flags ...
 	return bodyString, liveM3U8, nil
 }
 
-func RealLiveM3U8(liveUrl string, Parser string) (*model.LiveInfo, error) {
+func RealLiveM3U8(liveUrl string, proxyUrl string, Parser string) (*model.LiveInfo, error) {
 	if Parser == "" {
 		Parser = "youtube" // backward compatible with old database, use youtube parser by default
 	}
 	if p, err := plugin.GetPlugin(Parser); err == nil {
 		if liveInfo, ok := global.URLCache.Load(liveUrl); ok {
-			return p.Parse(liveUrl, liveInfo.ExtraInfo)
+			return p.Parse(liveUrl, proxyUrl, liveInfo.ExtraInfo)
 		}
-		return p.Parse(liveUrl, "")
+		return p.Parse(liveUrl, proxyUrl, "")
 	} else {
 		return nil, err
 	}

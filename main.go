@@ -27,7 +27,7 @@ import (
 
 func demo() {
 	p, _ := plugin.GetPlugin("4GTV")
-	li, err := p.Parse("https://4gtv.tv/channel/4gtv-4gtv002?set=4&ch=3", "")
+	li, err := p.Parse("https://4gtv.tv/channel/4gtv-4gtv002?set=4&ch=3", "", "")
 	if err != nil {
 		log.Println(err)
 	} else {

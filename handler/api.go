@@ -139,6 +139,7 @@ func ChannelListHandler(c *gin.Context) {
 			Parser:     v.Parser,
 			M3U8:       fmt.Sprintf("%s/live.m3u8?token=%s&c=%d", baseUrl, v.Token, v.ID),
 			Proxy:      v.Proxy,
+			ProxyUrl:   v.ProxyUrl,
 			LastUpdate: status.Time.Format("2006-01-02 15:04:05"),
 			Status:     status.Status,
 			Message:    status.Msg,
@@ -155,16 +156,18 @@ func NewChannelHandler(c *gin.Context) {
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	chParser := c.PostForm("parser")
+	chProxyUrl := c.PostForm("proxyurl")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
 	}
 	chProxy := c.PostForm("proxy") != ""
 	mch := model.Channel{
-		Name:   chName,
-		URL:    chURL,
-		Proxy:  chProxy,
-		Parser: chParser,
+		Name:     chName,
+		URL:      chURL,
+		Proxy:    chProxy,
+		ProxyUrl: chProxyUrl,
+		Parser:   chParser,
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -173,7 +176,7 @@ func NewChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	go service.UpdateURLCacheSingle(chURL, chParser, true) // update liveURL on adding new channel
+	go service.UpdateURLCacheSingle(chURL, chProxyUrl, chParser, true) // update liveURL on adding new channel
 }
 
 func AuthProbeHandler(c *gin.Context) {
@@ -202,6 +205,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	chParser := c.PostForm("parser")
+	chProxyUrl := c.PostForm("proxyurl")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
@@ -210,6 +214,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	channel.Name = chName
 	channel.Parser = chParser
 	channel.Proxy = chProxy
+	channel.ProxyUrl = chProxyUrl
 	channel.URL = chURL
 	err = service.SaveChannel(channel)
 	if err != nil {
@@ -218,7 +223,7 @@ func UpdateChannelHandler(c *gin.Context) {
 		return
 	}
 	c.String(http.StatusOK, "")
-	go service.UpdateURLCacheSingle(chURL, chParser, true) // update liveURL on updating new channel
+	go service.UpdateURLCacheSingle(chURL, chProxyUrl, chParser, true) // update liveURL on updating new channel
 }
 
 func DeleteChannelHandler(c *gin.Context) {

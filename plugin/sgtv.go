@@ -115,9 +115,11 @@ func unpad(src []byte) []byte {
 	return src[:(length - unpadding)]
 }
 
-func cloudScraper(req *http.Request) (*freq.Response, error) {
+func cloudScraper(req *http.Request, proxyUrl string) (*freq.Response, error) {
 	client := freq.ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
-
+	if proxyUrl != "" {
+		client.SetProxyURL(proxyUrl)
+	}
 	return client.R().SetBody(req.Body).Post(req.URL.String())
 
 	// // Client also will need a cookie jar.
@@ -143,7 +145,7 @@ func cloudScraper(req *http.Request) (*freq.Response, error) {
 	// return client.Do(req)
 }
 
-func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	iv := sgtvIV // yes, it's predefined and fully static
 	u, _ := url.Parse(liveUrl)
 	var sgtvReq SGTVRequest
@@ -162,7 +164,7 @@ func (p *SGTVParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, er
 	if err != nil {
 		return nil, err
 	}
-	resp, err := cloudScraper(req)
+	resp, err := cloudScraper(req, proxyUrl)
 	if err != nil {
 		return nil, err
 	}

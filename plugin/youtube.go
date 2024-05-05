@@ -44,9 +44,10 @@ func isLive(m3u8Url string) bool {
 	return !strings.Contains(scontent, "EXT-X-ENDLIST")
 }
 
-func parseUrl(liveUrl string) (*model.LiveInfo, error) {
+func parseUrl(liveUrl string, proxyUrl string) (*model.LiveInfo, error) {
 	client := http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
+		Transport: transportWithProxy(proxyUrl),
 	}
 	req, err := http.NewRequest("GET", liveUrl, nil)
 	if err != nil {
@@ -111,17 +112,17 @@ func (p *YoutubeParser) Check(content string, info *model.LiveInfo) error {
 	return nil
 }
 
-func (p *YoutubeParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *YoutubeParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	var info YoutubeExtraInfo
 	json.Unmarshal([]byte(lastInfo), &info)
 	// for generic urls like "youtube.com/@channel/live", we try last url first, then the generic url
 	if getYouTubeVideoID(liveUrl) == "" && info.LastUrl != "" {
-		if li, err := parseUrl(info.LastUrl); err == nil {
+		if li, err := parseUrl(info.LastUrl, proxyUrl); err == nil {
 			log.Println("Reused last url for video interpretation:", info.LastUrl)
 			return li, err
 		}
 	}
-	return parseUrl(liveUrl)
+	return parseUrl(liveUrl, proxyUrl)
 }
 
 func init() {

@@ -10,9 +10,10 @@ import (
 
 type URLM3U8Parser struct{}
 
-func (p *URLM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
+		Transport: transportWithProxy(proxyUrl),
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
@@ -31,7 +32,7 @@ func (p *URLM3U8Parser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo,
 		return nil, NoMatchFeed
 	}
 	directParser := &DirectM3U8Parser{}
-	return directParser.Parse(redir, lastInfo)
+	return directParser.Parse(redir, proxyUrl, lastInfo)
 }
 
 func init() {

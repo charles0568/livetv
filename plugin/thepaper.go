@@ -36,9 +36,10 @@ type ThePaperResponse struct {
 	Data ThePaperContent `json:"data"`
 }
 
-func (p *ThePaperParser) Parse(liveUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *ThePaperParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
-		Timeout: time.Second * 10,
+		Timeout:   time.Second * 10,
+		Transport: transportWithProxy(proxyUrl),
 	}
 	req, err := http.NewRequest("GET", liveUrl, nil)
 	if err != nil {

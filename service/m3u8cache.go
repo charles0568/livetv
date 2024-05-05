@@ -17,17 +17,17 @@ func LoadChannelCache() {
 		return
 	}
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL, v.Parser, true)
+		UpdateURLCacheSingle(v.URL, v.ProxyUrl, v.Parser, true)
 	}
 }
 
-func UpdateURLCacheSingle(Url string, Parser string, bUpdateStatus bool) (*model.LiveInfo, error) {
+func UpdateURLCacheSingle(Url string, proxyUrl string, Parser string, bUpdateStatus bool) (*model.LiveInfo, error) {
 	updateConcurrent <- true
 	defer func() {
 		<-updateConcurrent
 	}()
 	log.Println("caching", Url)
-	liveInfo, err := RealLiveM3U8(Url, Parser)
+	liveInfo, err := RealLiveM3U8(Url, proxyUrl, Parser)
 	if err != nil {
 		global.URLCache.Delete(Url)
 		UpdateStatus(Url, Error, err.Error())
@@ -62,6 +62,6 @@ func UpdateURLCache() {
 		return true
 	})
 	for _, v := range channels {
-		UpdateURLCacheSingle(v.URL, v.Parser, true)
+		UpdateURLCacheSingle(v.URL, v.ProxyUrl, v.Parser, true)
 	}
 }
