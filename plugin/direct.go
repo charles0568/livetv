@@ -16,8 +16,11 @@ type DirectM3U8Parser struct{}
 
 func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
+	if err != nil {
+		return nil, err
+	}
 	// return non http protocol directly
-	if err == nil && !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
+	if !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
 		li := &model.LiveInfo{}
 		li.LiveUrl = liveUrl
 		return li, nil
