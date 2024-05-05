@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime/debug"
 	"strings"
 	"time"
 
@@ -146,7 +145,6 @@ func GetPlugin(name string) (Plugin, error) {
 		return p, nil
 	}
 	log.Println(name, "not found")
-	debug.PrintStack()
 	return nil, NoMatchPlugin
 }
 
