@@ -52,7 +52,7 @@ func GetStatus(url any) StatusInfo {
 		return StatusInfo{
 			Status: Unknown,
 			Msg:    "Not yet parsed",
-			Time:   time.Now(),
+			Time:   time.Time{},
 		}
 	}
 }
