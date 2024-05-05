@@ -52,7 +52,7 @@ func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (string, str
 }
 
 // returns: content, updated m3u8url (if needed), error
-func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl string, flags ...bool) (string, string, error) {
+func GetM3U8Content(ChannelURL string, liveM3U8 string, ProxyUrl string, Parser string, flags ...bool) (string, string, error) {
 	// parse the optional flags
 	retryFlag := false
 	if len(flags) > 0 {
@@ -67,7 +67,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl 
 			log.Println(ChannelURL, "is unhealthy, doing a reparse...")
 			if li, err := UpdateURLCacheSingle(ChannelURL, ProxyUrl, Parser, false); err == nil {
 				UpdateStatus(ChannelURL, Warning, "Unhealthy")
-				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, Parser, ProxyUrl, true)
+				bodyString, newUrl, err = GetM3U8Content(ChannelURL, li.LiveUrl, ProxyUrl, Parser, true)
 				if err == nil {
 					log.Println(ChannelURL, "is back online now")
 					UpdateStatus(ChannelURL, Ok, "Live!") // revert our temporary warning status to ok
