@@ -1,6 +1,7 @@
 package service
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -94,7 +95,7 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl 
 
 	var dialer Dialer
 	dialer = &net.Dialer{
-		Timeout: time.Second * 5,
+		Timeout: global.HttpClientTimeout,
 	}
 	if ProxyUrl != "" {
 		if u, err := url.Parse(ProxyUrl); err == nil {
@@ -106,7 +107,8 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, Parser string, ProxyUrl 
 	client := http.Client{
 		Timeout: global.HttpClientTimeout,
 		Transport: &http.Transport{
-			Dial: dialer.Dial,
+			Dial:            dialer.Dial,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 	req, err := http.NewRequest(http.MethodGet, decoraUrl, nil)

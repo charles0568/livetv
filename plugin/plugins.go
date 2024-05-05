@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"crypto/tls"
 	"errors"
 	"io"
 	"log"
@@ -45,9 +46,12 @@ const (
 
 func transportWithProxy(proxyUrl string) *http.Transport {
 	d := &net.Dialer{
-		Timeout: time.Second * 5,
+		Timeout: global.HttpClientTimeout,
 	}
-	tr := &http.Transport{Dial: d.Dial}
+	tr := &http.Transport{
+		Dial:            d.Dial,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	if proxyUrl != "" {
 		if u, err := url.Parse(proxyUrl); err == nil {
 			if p, e := proxy.FromURL(u, d); e == nil {
