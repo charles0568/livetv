@@ -39,10 +39,17 @@ func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (string, str
 	} else {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)
-		if time.Now().Sub(status.Time) > time.Minute {
+		coolDownInterval := time.Second * time.Duration(status.CoolDownMultiplier)
+		if coolDownInterval > time.Minute*2 {
+			coolDownInterval = time.Minute * 2
+		}
+		if time.Now().Sub(status.Time) > coolDownInterval {
 			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, proxyUrl, Parser, true); err == nil {
 				return liveInfo.LiveUrl, liveInfo.Logo, nil
 			} else {
+				if status.CoolDownMultiplier < 1024 {
+					status.CoolDownMultiplier *= 2
+				}
 				return "", "", err
 			}
 		} else {

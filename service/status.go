@@ -7,10 +7,11 @@ import (
 )
 
 type StatusInfo struct {
-	Time       time.Time
-	RetryCount int
-	Status     int
-	Msg        string
+	Time               time.Time
+	CoolDownMultiplier int
+	RetryCount         int
+	Status             int
+	Msg                string
 }
 
 const (
@@ -32,27 +33,31 @@ func UpdateStatus(url any, status int, msg string) {
 		c.Time = time.Now()
 		if status == Ok {
 			c.RetryCount = 0
+			c.CoolDownMultiplier = 1
 		} else {
 			c.RetryCount++
 		}
 	} else {
 		statusCache.Store(url, &StatusInfo{
-			Msg:        msg,
-			Status:     status,
-			RetryCount: 0,
-			Time:       time.Now(),
+			Msg:                msg,
+			Status:             status,
+			RetryCount:         0,
+			CoolDownMultiplier: 1,
+			Time:               time.Now(),
 		})
 	}
 }
 
-func GetStatus(url any) StatusInfo {
+func GetStatus(url any) *StatusInfo {
 	if c, ok := statusCache.Load(url); ok {
-		return *c
+		return c
 	} else {
-		return StatusInfo{
-			Status: Unknown,
-			Msg:    "Not yet parsed",
-			Time:   time.Time{},
+		return &StatusInfo{
+			Status:             Unknown,
+			Msg:                "Not yet parsed",
+			Time:               time.Time{},
+			CoolDownMultiplier: 1,
+			RetryCount:         0,
 		}
 	}
 }
