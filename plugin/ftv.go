@@ -54,7 +54,7 @@ func (p *FTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*mo
 		var ftvresp FTVResponse
 		json.Unmarshal([]byte(resultJson), &ftvresp)
 		if ftvresp.VideoURL != "" {
-			liveUrl, err := bestFromMasterPlaylist(ftvresp.VideoURL)
+			liveUrl, err := bestFromMasterPlaylist(ftvresp.VideoURL, proxyUrl)
 			log.Println("best url:", liveUrl)
 			li := &model.LiveInfo{}
 			if err == nil {

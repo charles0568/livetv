@@ -21,9 +21,10 @@ type YoutubeExtraInfo struct {
 	LastUrl string
 }
 
-func isLive(m3u8Url string) bool {
+func isLive(m3u8Url string, proxyUrl) bool {
 	client := http.Client{
 		Timeout: time.Second * 10,
+		Transport: transportWithProxy(proxyUrl),
 	}
 	req, err := http.NewRequest("GET", m3u8Url, nil)
 	if err != nil {
@@ -71,13 +72,13 @@ func parseUrl(liveUrl string, proxyUrl string) (*model.LiveInfo, error) {
 	if matches != nil {
 		gps := matches.Groups()
 		liveMasterUrl := gps[0].Captures[0].String()
-		liveUrl, err := bestFromMasterPlaylist(liveMasterUrl) // extract the best quality live url from the master playlist
+		liveUrl, err := bestFromMasterPlaylist(liveMasterUrl, proxyUrl) // extract the best quality live url from the master playlist
 		if err != nil {
 			return nil, err
 		}
 
 		// check if the live feed is still streaming
-		if !isLive(liveUrl) {
+		if !isLive(liveUrl, proxyUrl) {
 			return nil, errors.New("No longer streaming")
 		}
 

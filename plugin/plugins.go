@@ -68,13 +68,14 @@ func registerPlugin(name string, parser Plugin) {
 	pluginCenter[name] = parser
 }
 
-func bestFromMasterPlaylist(masterUrl string, content ...io.Reader) (string, error) {
+func bestFromMasterPlaylist(masterUrl string, proxyUrl string, content ...io.Reader) (string, error) {
 	var playlist io.Reader
 	if len(content) > 0 {
 		playlist = content[0]
 	} else {
 		client := http.Client{
-			Timeout: time.Second * 10,
+			Timeout:   time.Second * 10,
+			Transport: transportWithProxy(proxyUrl),
 		}
 		req, err := http.NewRequest("GET", masterUrl, nil)
 		if err != nil {
