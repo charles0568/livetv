@@ -3,6 +3,7 @@ package plugin
 
 import (
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
@@ -10,6 +11,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -118,7 +120,9 @@ func unpad(src []byte) []byte {
 func cloudScraper(req *http.Request, proxyUrl string) (*freq.Response, error) {
 	client := freq.ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
 	if proxyUrl != "" {
-		client.SetProxyURL(proxyUrl)
+		client.SetDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return transportWithProxy(proxyUrl).Dial(network, addr)
+		})
 	}
 	return client.R().SetBody(req.Body).Post(req.URL.String())
 
