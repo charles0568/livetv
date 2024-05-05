@@ -151,7 +151,10 @@ func cloudScraper(req *http.Request, proxyUrl string) (*freq.Response, error) {
 
 func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
 	iv := sgtvIV // yes, it's predefined and fully static
-	u, _ := url.Parse(liveUrl)
+	u, urlerr := url.Parse(liveUrl)
+	if urlerr != nil {
+		return nil, urlerr
+	}
 	var sgtvReq SGTVRequest
 	sgtvReq.ChannelID = u.Query().Get("ch")
 	sgtvReq.AssetID = filepath.Base(u.Path)
