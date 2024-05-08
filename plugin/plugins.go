@@ -87,9 +87,13 @@ func bestFromMasterPlaylist(masterUrl string, proxyUrl string, content ...io.Rea
 			return "", err
 		}
 		defer resp.Body.Close()
-		if resp.ContentLength > 10*1024*1024 || !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
-			log.Println(masterUrl, "content-type:", resp.Header.Get("Content-Type"), "is invalid")
-			return "", errors.New("invalid url")
+		if resp.ContentLength > 10*1024*1024 {
+			log.Println(masterUrl, "content too large")
+			return "", errors.New("Content too large")
+		}
+		if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
+			log.Println(masterUrl, "content type is incorrect")
+			return "", errors.New(resp.Header.Get("Content-Type") + " is unknown")
 		}
 		playlist = resp.Body
 	}
