@@ -123,7 +123,7 @@ func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*m
 	var sgtvReq SGTVRequest
 	sgtvReq.ChannelID = u.Query().Get("ch")
 	sgtvReq.AssetID = filepath.Base(u.Path)
-	sgtvReq.DeviceType = "mobile"
+	sgtvReq.DeviceType = "pc"
 
 	if sgtvReq.ChannelID == "" || sgtvReq.AssetID == "" {
 		return nil, errors.New("Channel and asset ID must be provided")
