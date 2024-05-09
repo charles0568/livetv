@@ -93,6 +93,8 @@ func bestFromMasterPlaylist(masterUrl string, proxyUrl string, content ...io.Rea
 		}
 		if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "mpegurl") {
 			log.Println(masterUrl, "content type is incorrect")
+			body, _ := io.ReadAll(resp.Body)
+			log.Println("body", string(body))
 			return "", errors.New(resp.Header.Get("Content-Type") + " is unknown")
 		}
 		playlist = resp.Body

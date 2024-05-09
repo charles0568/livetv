@@ -187,6 +187,7 @@ func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*m
 		if err == nil {
 			var chInfo SGTVChannelInfo
 			if json.Unmarshal(cleartext, &chInfo) == nil && len(chInfo.Urls) > 0 {
+				//log.Println("master playlist", chInfo.Urls[0])
 				liveUrl, err := bestFromMasterPlaylist(chInfo.Urls[0], proxyUrl) // extract the best quality live url from the master playlist
 				if err != nil {
 					return nil, err
