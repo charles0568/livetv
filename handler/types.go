@@ -6,6 +6,7 @@ type Channel struct {
 	URL        string
 	M3U8       string
 	Proxy      bool
+	TsProxy    string
 	ProxyUrl   string
 	Parser     string
 	LastUpdate string

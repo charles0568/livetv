@@ -7,6 +7,7 @@ type Channel struct {
 	URL      string
 	Parser   string
 	Proxy    bool
+	TsProxy  string // new field for customized live.ts server
 	ProxyUrl string // proxy for server connection
 	Token    string `gorm:"-:all"`
 }
