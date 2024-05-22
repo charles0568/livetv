@@ -14,7 +14,7 @@ import (
 
 type DirectM3U8Parser struct{}
 
-func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
 	if err != nil {
 		return nil, err

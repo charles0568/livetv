@@ -23,7 +23,7 @@ type FTVResponse struct {
 	fsVENDOR string
 }
 
-func (p *FTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *FTVParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
 		Timeout:   time.Second * 10,
 		Transport: transportWithProxy(proxyUrl),

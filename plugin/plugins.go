@@ -24,7 +24,7 @@ import (
 )
 
 type Plugin interface {
-	Parse(liveUrl string, proxyUrl string, lastInfo string) (info *model.LiveInfo, error error)
+	Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (info *model.LiveInfo, error error)
 }
 
 type Transformer interface {

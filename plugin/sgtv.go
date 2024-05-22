@@ -114,7 +114,7 @@ func unpad(src []byte) []byte {
 	return src[:(length - unpadding)]
 }
 
-func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	iv := sgtvIV // yes, it's predefined and fully static
 	u, urlerr := url.Parse(liveUrl)
 	if urlerr != nil {
