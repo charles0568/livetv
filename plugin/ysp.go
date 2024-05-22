@@ -501,9 +501,10 @@ func (p *YSPParser) kvcollect2(liveinfo *model.LiveInfo) bool {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	if resp, err := client.Do(req); err == nil {
 		defer resp.Body.Close()
-		result, _ := ioutil.ReadAll(resp.Body)
+		//result, _ := ioutil.ReadAll(resp.Body)
 		//log.Println("kvcollect2 reply:", string(result))
 		//log.Println("kvcollect2 succeeded")
+		// return string(result) == "01"
 		return true
 	} else {
 		log.Println("kvcollect2 failed", err)
