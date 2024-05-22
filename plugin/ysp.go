@@ -361,7 +361,7 @@ func makeSign(obj any, salt string) string {
 	json.Unmarshal(js, &data)
 	str2sign := getSortedValues(data)
 
-	log.Println("string to sign", str2sign)
+	//log.Println("string to sign", str2sign)
 	h := md5.New()
 	h.Write([]byte(str2sign + salt))
 	return fmt.Sprintf("%x", h.Sum(nil))
@@ -491,7 +491,7 @@ func (p *YSPParser) kvcollect2(liveinfo *model.LiveInfo) bool {
 	var dataMap map[string]any
 	json.Unmarshal(data, &dataMap)
 	queryString := buildQuery(dataMap)
-	log.Println("query string", queryString)
+	// log.Println("query string", queryString)
 	body := bytes.NewBufferString(queryString)
 	// now send the request
 	client := http.Client{
