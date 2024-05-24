@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/zjyl1994/livetv/model"
+	"github.com/zjyl1994/livetv/syncx"
 )
 
 type YSPParser struct {
@@ -532,6 +533,8 @@ func (p *YSPParser) Heartbeat(liveinfo *model.LiveInfo) {
 	}
 }
 
+var beatLock syncx.Map[string, bool]
+
 // check for playlist expiring.
 // ysp playurl only stays valid for 5min, after that, a threshold will be applied
 func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
@@ -552,7 +555,10 @@ func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
 		log.Println("ysp playlist expired")
 		return errors.New("expired")
 	} else {
-		p.Heartbeat(info)
+		if _, loaded := beatLock.LoadOrStore(info.LiveUrl, true); !loaded {
+			p.Heartbeat(info)
+			beatLock.Delete(info.LiveUrl)
+		}
 	}
 	return nil
 }
