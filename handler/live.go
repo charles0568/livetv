@@ -116,7 +116,7 @@ func LiveHandler(c *gin.Context) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
-		proxyUrl, _ := global.GetConfig("proxy_url")
+		proxyUrl := channelInfo.TsProxy
 		if proxyUrl == "" {
 			proxyUrl = baseUrl
 		}

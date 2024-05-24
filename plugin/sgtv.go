@@ -3,7 +3,6 @@ package plugin
 
 import (
 	"bytes"
-	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
@@ -11,12 +10,10 @@ import (
 	"errors"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"path/filepath"
 
-	freq "github.com/imroc/req/v3"
 	"github.com/zjyl1994/livetv/model"
 )
 
@@ -117,39 +114,7 @@ func unpad(src []byte) []byte {
 	return src[:(length - unpadding)]
 }
 
-func cloudScraper(req *http.Request, proxyUrl string) (*freq.Response, error) {
-	client := freq.C().ImpersonateChrome().SetCommonContentType("application/x-www-form-urlencoded; charset=UTF-8").SetCommonHeader("accept", "*/*")
-	if proxyUrl != "" {
-		client.SetDial(func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return transportWithProxy(proxyUrl).Dial(network, addr)
-		})
-	}
-	return client.R().SetBody(req.Body).Post(req.URL.String())
-
-	// // Client also will need a cookie jar.
-	// // client := http.Client{}
-	// // cookieJar, _ := cookiejar.New(nil)
-	// // client.Jar = cookieJar
-	// client, _ := newTlsClient()
-	// req.Header = http.Header{
-	// 	// "sec-ch-ua":        {`"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"`},
-	// 	"sec-ch-ua-mobile":   {`?1`},
-	// 	"User-Agent":         {`Mozilla/5.0 (iPad; CPU OS 16_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/121.0.2277.107 Version/16.0 Mobile/15E148 Safari/604.1`},
-	// 	"Accept":             {`*/*`},
-	// 	"Sec-Fetch-Site":     {`same-site`},
-	// 	"Sec-Fetch-Mode":     {`cors`},
-	// 	"Sec-Fetch-Dest":     {`empty`},
-	// 	"Content-Type":       {"application/x-www-form-urlencoded; charset=UTF-8"},
-	// 	"Accept-Encoding":    {`gzip, deflate`},
-	// 	"Accept-Language":    {`en-US,en;q=0.9`},
-	// 	http.HeaderOrderKey:  {"sec-ch-ua", "sec-ch-ua-mobile", "upgrade-insecure-requests", "user-agent", "accept", "sec-fetch-site", "sec-fetch-mode", "sec-fetch-user", "sec-fetch-dest", "accept-encoding", "accept-language"},
-	// 	http.PHeaderOrderKey: {":method", ":authority", ":scheme", ":path"},
-	// }
-
-	// return client.Do(req)
-}
-
-func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	iv := sgtvIV // yes, it's predefined and fully static
 	u, urlerr := url.Parse(liveUrl)
 	if urlerr != nil {
@@ -158,7 +123,7 @@ func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*m
 	var sgtvReq SGTVRequest
 	sgtvReq.ChannelID = u.Query().Get("ch")
 	sgtvReq.AssetID = filepath.Base(u.Path)
-	sgtvReq.DeviceType = "mobile"
+	sgtvReq.DeviceType = "pc"
 
 	if sgtvReq.ChannelID == "" || sgtvReq.AssetID == "" {
 		return nil, errors.New("Channel and asset ID must be provided")
@@ -187,6 +152,7 @@ func (p *SGTVParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*m
 		if err == nil {
 			var chInfo SGTVChannelInfo
 			if json.Unmarshal(cleartext, &chInfo) == nil && len(chInfo.Urls) > 0 {
+				//log.Println("master playlist", chInfo.Urls[0])
 				liveUrl, err := bestFromMasterPlaylist(chInfo.Urls[0], proxyUrl) // extract the best quality live url from the master playlist
 				if err != nil {
 					return nil, err

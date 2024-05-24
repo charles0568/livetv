@@ -113,9 +113,9 @@ func (p *YoutubeParser) Check(content string, info *model.LiveInfo) error {
 	return nil
 }
 
-func (p *YoutubeParser) Parse(liveUrl string, proxyUrl string, lastInfo string) (*model.LiveInfo, error) {
+func (p *YoutubeParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	var info YoutubeExtraInfo
-	json.Unmarshal([]byte(lastInfo), &info)
+	json.Unmarshal([]byte(previousExtraInfo), &info)
 	// for generic urls like "youtube.com/@channel/live", we try last url first, then the generic url
 	if getYouTubeVideoID(liveUrl) == "" && info.LastUrl != "" {
 		if li, err := parseUrl(info.LastUrl, proxyUrl); err == nil {

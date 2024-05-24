@@ -76,9 +76,6 @@ func loadConfig() (Config, error) {
 	if apiKey, err := global.GetConfig("apiKey"); err == nil {
 		conf.ApiKey = apiKey
 	}
-	if proxy, err := global.GetConfig("proxy_url"); err == nil {
-		conf.ProxyURL = proxy
-	}
 	return conf, nil
 }
 
@@ -137,6 +134,7 @@ func ChannelListHandler(c *gin.Context) {
 			Name:       v.Name,
 			URL:        v.URL,
 			Parser:     v.Parser,
+			TsProxy:    v.TsProxy,
 			M3U8:       fmt.Sprintf("%s/live.m3u8?token=%s&c=%d", baseUrl, v.Token, v.ID),
 			Proxy:      v.Proxy,
 			ProxyUrl:   v.ProxyUrl,
@@ -157,6 +155,7 @@ func NewChannelHandler(c *gin.Context) {
 	chURL := c.PostForm("url")
 	chParser := c.PostForm("parser")
 	chProxyUrl := c.PostForm("proxyurl")
+	chTsProxy := c.PostForm("tsproxy")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
@@ -168,6 +167,7 @@ func NewChannelHandler(c *gin.Context) {
 		Proxy:    chProxy,
 		ProxyUrl: chProxyUrl,
 		Parser:   chParser,
+		TsProxy:  chTsProxy,
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -206,6 +206,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	chURL := c.PostForm("url")
 	chParser := c.PostForm("parser")
 	chProxyUrl := c.PostForm("proxyurl")
+	chTsProxy := c.PostForm("tsproxy")
 	if chName == "" || chURL == "" {
 		c.String(http.StatusBadRequest, "Incomplete channel info")
 		return
@@ -216,6 +217,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	channel.Proxy = chProxy
 	channel.ProxyUrl = chProxyUrl
 	channel.URL = chURL
+	channel.TsProxy = chTsProxy
 	err = service.SaveChannel(channel)
 	if err != nil {
 		log.Println(err.Error())
@@ -269,7 +271,6 @@ func UpdateConfigHandler(c *gin.Context) {
 	baseUrl := strings.TrimSuffix(c.PostForm("baseurl"), "/")
 	apiKey := strings.TrimSpace(c.PostForm("apikey"))
 	secret := strings.TrimSpace(c.PostForm("secret"))
-	proxyUrl := strings.TrimSuffix(c.PostForm("proxyurl"), "/")
 	if len(ytdlCmd) > 0 {
 		err := global.SetConfig("ytdl_cmd", ytdlCmd)
 		if err != nil {
@@ -294,7 +295,6 @@ func UpdateConfigHandler(c *gin.Context) {
 			return
 		}
 	}
-	global.SetConfig("proxy_url", proxyUrl)
 	global.SetConfig("apiKey", apiKey)
 	global.SetConfig("secret", secret)
 	global.ClearSecretToken()
