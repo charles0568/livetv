@@ -556,10 +556,10 @@ func (p *YSPParser) Check(content string, info *model.LiveInfo) error {
 		return errors.New("expired")
 	} else {
 		if _, loaded := beatLock.LoadOrStore(info.LiveUrl, true); !loaded {
-			go func(){
+			go func() {
 				p.Heartbeat(info)
 				beatLock.Delete(info.LiveUrl)
-		}()
+			}()
 		}
 	}
 	return nil
