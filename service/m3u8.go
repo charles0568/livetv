@@ -40,7 +40,10 @@ func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool) 
 	scanner := bufio.NewScanner(strings.NewReader(data))
 	baseUrl := global.GetBaseURL(playlistUrl)
 	for scanner.Scan() {
-		l := scanner.Text()
+		l := strings.TrimSpace(scanner.Text())
+		if l == "" {
+			continue
+		}
 		if strings.HasPrefix(l, "#") {
 			sb.WriteString(l)
 		} else {
