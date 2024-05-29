@@ -3,6 +3,8 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -35,6 +37,21 @@ func PlaceHolderHLS() string {
 	return fmt.Sprintf(tpl, placeholder, placeholder, placeholder)
 }
 
+func cleanUrl(Url string) string {
+	parsedURL, err := url.Parse(Url)
+	if err != nil {
+		return Url
+	}
+
+	// Resolve the path using path resolution
+	parsedURL.Path = path.Clean(parsedURL.Path) // Remove trailing segments
+
+	// Get the final clean URL as a string
+	cleanURL := parsedURL.String()
+
+	return cleanURL
+}
+
 func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool) string {
 	var sb strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(data))
@@ -48,7 +65,7 @@ func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool) 
 			sb.WriteString(l)
 		} else {
 			if !global.IsValidURL(l) {
-				l = baseUrl + l
+				l = cleanUrl(baseUrl + l)
 			}
 			if proxy {
 				sb.WriteString(prefixURL)
