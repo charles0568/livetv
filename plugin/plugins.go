@@ -28,11 +28,15 @@ type Plugin interface {
 }
 
 type Transformer interface {
-	Transform(playList string, lastInfo string) (string, error)
+	Transform(req *http.Request, info *model.LiveInfo) error
 }
 
 type HealthCheck interface {
 	Check(content string, info *model.LiveInfo) error
+}
+
+type UrlInfo struct {
+	Headers map[string]string `json:"headers"`
 }
 
 var (

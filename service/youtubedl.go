@@ -89,17 +89,6 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, ProxyUrl string, Parser 
 
 	li, _ := global.URLCache.Load(ChannelURL)
 
-	// allow plugins to decorate the m3u8 url
-	decoraUrl := liveM3U8
-	if p, err := plugin.GetPlugin(Parser); err == nil {
-		if transformer, ok := p.(plugin.Transformer); ok {
-			if li != nil {
-				decoraUrl, _ = transformer.Transform(liveM3U8, li.ExtraInfo)
-				log.Println("transformed", liveM3U8, "=>", decoraUrl)
-			}
-		}
-	}
-
 	var dialer Dialer
 	dialer = &net.Dialer{
 		Timeout: global.HttpClientTimeout,
@@ -118,12 +107,23 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, ProxyUrl string, Parser 
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
-	req, err := http.NewRequest(http.MethodGet, decoraUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, liveM3U8, nil)
 	if err != nil {
 		log.Println(err)
 		return "", liveM3U8, err
 	}
 	req.Header.Set("User-Agent", DefaultUserAgent)
+
+	// allow plugins to decorate the m3u8 url
+	if p, err := plugin.GetPlugin(Parser); err == nil {
+		if transformer, ok := p.(plugin.Transformer); ok {
+			if li != nil {
+				transformer.Transform(req, li)
+				log.Println("transformed", liveM3U8, "=>", req.URL)
+			}
+		}
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", liveM3U8, err

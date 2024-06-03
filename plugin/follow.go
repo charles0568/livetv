@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -9,6 +10,11 @@ import (
 )
 
 type URLM3U8Parser struct{}
+
+func (p *URLM3U8Parser) Transform(req *http.Request, info *model.LiveInfo) error {
+	directParser := &DirectM3U8Parser{}
+	return directParser.Transform(req, info)
+}
 
 func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	client := http.Client{
@@ -28,6 +34,13 @@ func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo
 		return nil, err
 	}
 	defer resp.Body.Close()
+	var ui UrlInfo
+	decoder := json.NewDecoder(resp.Body)
+	if decoder.Decode(&ui) == nil && len(ui.Headers) > 0 {
+		js, _ := json.Marshal(ui)
+		previousExtraInfo = string(js) // write headers info to extraInfo
+	}
+
 	redir := resp.Header.Get("Location")
 	if redir == "" {
 		return nil, NoMatchFeed

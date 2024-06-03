@@ -2,6 +2,7 @@
 package plugin
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/url"
@@ -13,6 +14,16 @@ import (
 )
 
 type DirectM3U8Parser struct{}
+
+func (p *DirectM3U8Parser) Transform(req *http.Request, info *model.LiveInfo) error {
+	var ui UrlInfo
+	json.Unmarshal([]byte(info.ExtraInfo), &ui)
+	for v, k := range ui.Headers {
+		log.Println("added header", v, k)
+		req.Header.Add(v, k)
+	}
+	return nil
+}
 
 func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
@@ -51,6 +62,7 @@ func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraI
 				liveUrl = global.GetBaseURL(liveUrl) + liveUrl
 			}
 			li.LiveUrl = liveUrl
+			li.ExtraInfo = previousExtraInfo
 			return li, nil
 		}
 	}
