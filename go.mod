@@ -13,10 +13,12 @@ require (
 	github.com/imroc/req/v3 v3.43.1
 	github.com/jinzhu/gorm v1.9.16
 	github.com/joho/godotenv v1.3.0
+	github.com/nareix/joy5 v0.0.0-20210317075623-2c912ca30590
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sosodev/duration v1.2.0
 	golang.org/x/crypto v0.21.0
+	golang.org/x/net v0.22.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.163.0
 )
@@ -77,7 +79,6 @@ require (
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect

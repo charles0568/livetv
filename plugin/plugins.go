@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net"
@@ -33,6 +34,10 @@ type Transformer interface {
 
 type HealthCheck interface {
 	Check(content string, info *model.LiveInfo) error
+}
+
+type FeedHost interface {
+	Host(c *gin.Context, info *model.LiveInfo) error
 }
 
 type UrlInfo struct {

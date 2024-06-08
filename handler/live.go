@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"github.com/zjyl1994/livetv/plugin"
 	"io"
 	"log"
 	"net/http"
@@ -120,19 +121,27 @@ func LiveHandler(c *gin.Context) {
 		if proxyUrl == "" {
 			proxyUrl = baseUrl
 		}
-		liveM3U8, _, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.ProxyUrl, channelInfo.Parser)
+		liveInfo, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.ProxyUrl, channelInfo.Parser)
 		if err != nil {
 			log.Println(err)
 			// c.AbortWithStatus(http.StatusInternalServerError)
 			// return a placeholder video
 			m3u8Body = service.PlaceHolderHLS() // make a fake m3u8 pointing to the target
 		} else {
+			if parser, err := plugin.GetPlugin(channelInfo.Parser); err == nil {
+				if handler, ok := parser.(plugin.FeedHost); ok {
+					// handler has the ability host the feed and succeeded
+					if handler.Host(c, liveInfo) == nil {
+						return
+					}
+				}
+			}
 			// handle non http protocols like rtsp, rtmp and etc.
-			if handleNonHTTPProtocol(liveM3U8, c) {
+			if handleNonHTTPProtocol(liveInfo.LiveUrl, c) {
 				return
 			}
-			// the GetM3U8Content will handle health-check, reparse, url decoration and etc. and returns the final result and the final url used
-			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveM3U8, channelInfo.ProxyUrl, channelInfo.Parser)
+			// the GetM3U8Content will handle health-check, reparse, url decoration etc. and returns the final result and the final url used
+			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveInfo.LiveUrl, channelInfo.ProxyUrl, channelInfo.Parser)
 			// if finalUrl != liveM3U8 {
 			// 	log.Println("liveurl changed:", liveM3U8, finalUrl)
 			// } else {

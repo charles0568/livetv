@@ -32,10 +32,10 @@ var errNoMatchFound error = errors.New("This channel is not currently live")
 
 const DefaultUserAgent string = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 
-func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (string, string, error) {
+func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (*model.LiveInfo, error) {
 	liveInfo, ok := global.URLCache.Load(youtubeURL)
 	if ok {
-		return liveInfo.LiveUrl, liveInfo.Logo, nil
+		return liveInfo, nil
 	} else {
 		log.Println("cache miss", youtubeURL)
 		status := GetStatus(youtubeURL)
@@ -45,15 +45,15 @@ func GetLiveM3U8(youtubeURL string, proxyUrl string, Parser string) (string, str
 		}
 		if time.Now().Sub(status.Time) > coolDownInterval {
 			if liveInfo, err := UpdateURLCacheSingle(youtubeURL, proxyUrl, Parser, true); err == nil {
-				return liveInfo.LiveUrl, liveInfo.Logo, nil
+				return liveInfo, nil
 			} else {
 				if status.CoolDownMultiplier < 1024 {
 					status.CoolDownMultiplier *= 2
 				}
-				return "", "", err
+				return nil, err
 			}
 		} else {
-			return "", "", errors.New("parser cooling down")
+			return nil, errors.New("parser cooling down")
 		}
 	}
 }
