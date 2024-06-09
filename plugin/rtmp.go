@@ -49,7 +49,7 @@ func (p *RTMPParser) Host(c *gin.Context, info *model.LiveInfo) error {
 
 func (p *RTMPParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
-	if err != nil || strings.EqualFold(u.Scheme, "rtmp") {
+	if err != nil || !strings.EqualFold(u.Scheme, "rtmp") {
 		client := http.Client{
 			Timeout:   time.Second * 10,
 			Transport: transportWithProxy(proxyUrl),
