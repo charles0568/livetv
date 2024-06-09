@@ -48,38 +48,41 @@ func (p *RTMPParser) Host(c *gin.Context, info *model.LiveInfo) error {
 }
 
 func (p *RTMPParser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
-	client := http.Client{
-		Timeout:   time.Second * 10,
-		Transport: transportWithProxy(proxyUrl),
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-	req, err := http.NewRequest("GET", liveUrl, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", DefaultUserAgent)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var ui UrlInfo
-	decoder := json.NewDecoder(resp.Body)
-	if decoder.Decode(&ui) == nil && len(ui.Headers) > 0 {
-		js, _ := json.Marshal(ui)
-		previousExtraInfo = string(js) // write headers info to extraInfo
-	}
+	u, err := url.Parse(liveUrl)
+	if err != nil || strings.EqualFold(u.Scheme, "rtmp") {
+		client := http.Client{
+			Timeout:   time.Second * 10,
+			Transport: transportWithProxy(proxyUrl),
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+		req, err := http.NewRequest("GET", liveUrl, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", DefaultUserAgent)
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		var ui UrlInfo
+		decoder := json.NewDecoder(resp.Body)
+		if decoder.Decode(&ui) == nil && len(ui.Headers) > 0 {
+			js, _ := json.Marshal(ui)
+			previousExtraInfo = string(js) // write headers info to extraInfo
+		}
 
-	redir := resp.Header.Get("Location")
-	if redir == "" {
-		return nil, NoMatchFeed
+		redir := resp.Header.Get("Location")
+		if redir == "" {
+			return nil, NoMatchFeed
+		}
+		u, err = url.Parse(redir)
 	}
-	u, err := url.Parse(redir)
 	if err == nil && strings.EqualFold(u.Scheme, "rtmp") {
 		li := &model.LiveInfo{}
-		li.LiveUrl = redir
+		li.LiveUrl = u.String()
 		li.ExtraInfo = previousExtraInfo
 		return li, nil
 	}
