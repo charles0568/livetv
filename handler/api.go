@@ -123,9 +123,10 @@ func ChannelListHandler(c *gin.Context) {
 	}
 	channels := make([]Channel, len(channelModels)+1)
 	channels[0] = Channel{
-		ID:   0,
-		Name: "playlist",
-		M3U8: fmt.Sprintf("%s/lives.m3u?token=%s", baseUrl, global.GetSecretToken()),
+		ID:     0,
+		Name:   "playlist",
+		M3U8:   fmt.Sprintf("%s/lives.m3u?token=%s", baseUrl, global.GetSecretToken()),
+		Status: service.Ok,
 	}
 	for i, v := range channelModels {
 		status := service.GetStatus(v.URL)
