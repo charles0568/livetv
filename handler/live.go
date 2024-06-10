@@ -124,11 +124,11 @@ func LiveHandler(c *gin.Context) {
 		liveInfo, err := service.GetLiveM3U8(channelInfo.URL, channelInfo.ProxyUrl, channelInfo.Parser)
 		if err != nil {
 			log.Println(err)
-			// c.AbortWithStatus(http.StatusInternalServerError)
 			// return a placeholder video
 			m3u8Body = service.PlaceHolderHLS() // make a fake m3u8 pointing to the target
 		} else {
-			if parser, err := plugin.GetPlugin(channelInfo.Parser); err == nil {
+			parser, err := plugin.GetPlugin(channelInfo.Parser)
+			if err == nil {
 				if handler, ok := parser.(plugin.FeedHost); ok {
 					// handler has the ability host the feed and succeeded
 					if handler.Host(c, liveInfo) == nil {
@@ -142,22 +142,20 @@ func LiveHandler(c *gin.Context) {
 			}
 			// the GetM3U8Content will handle health-check, reparse, url decoration etc. and returns the final result and the final url used
 			bodyString, finalUrl, err := service.GetM3U8Content(channelInfo.URL, liveInfo.LiveUrl, channelInfo.ProxyUrl, channelInfo.Parser)
-			// if finalUrl != liveM3U8 {
-			// 	log.Println("liveurl changed:", liveM3U8, finalUrl)
-			// } else {
-			// 	log.Println("liveurl unchanged")
-			// }
 			if bodyString == "" {
 				log.Println(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
 				return
 			}
-			m3u8Body = service.M3U8Process(finalUrl, bodyString, proxyUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy)
-			// if channelInfo.Proxy {
-			// 	m3u8Body = service.M3U8Process(liveM3U8, bodyString, baseUrl+"/live.ts?k=")
-			// } else {
-			// 	m3u8Body = bodyString
-			// }
+			iTsTransformer, _ := parser.(plugin.TsTransformer)
+			// get m3u8 content and transcode into tsproxy link if needed
+			m3u8Body = service.M3U8Process(finalUrl, bodyString, proxyUrl+"/live.ts?token="+global.GetLiveToken()+"&k=", channelInfo.Proxy,
+				func(raw string, ts string) string {
+					if iTsTransformer == nil {
+						return ts
+					}
+					return iTsTransformer.TransformTs(raw, ts, liveInfo) // allow plugins to override our default tslink
+				})
 			global.M3U8Cache.Set(channelCacheKey, m3u8Body, 3*time.Second)
 		}
 	}
@@ -196,6 +194,13 @@ func TsProxyHandler(c *gin.Context) {
 	req.RequestURI = ""
 	req.Host = ""
 	req.URL = rurl
+	// added possible custom headers
+	queries := c.Request.URL.Query()
+	for key, value := range queries {
+		if strings.HasPrefix(key, "header") && len(value) > 0 {
+			req.Header.Add(key[6:], value[0])
+		}
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println(err)

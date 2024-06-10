@@ -24,6 +24,21 @@ func (p *DirectM3U8Parser) Transform(req *http.Request, info *model.LiveInfo) er
 	return nil
 }
 
+func (p *DirectM3U8Parser) TransformTs(rawLink string, tsLink string, info *model.LiveInfo) string {
+	var ui UrlInfo
+	json.Unmarshal([]byte(info.ExtraInfo), &ui)
+	u, err := url.Parse(tsLink)
+	if err == nil {
+		q := u.Query()
+		for v, k := range ui.Headers {
+			q.Add("header"+v, k)
+		}
+		u.RawQuery = q.Encode()
+		return u.String()
+	}
+	return tsLink
+}
+
 func (p *DirectM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
 	u, err := url.Parse(liveUrl)
 	if err != nil {

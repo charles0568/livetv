@@ -24,20 +24,29 @@ import (
 	"github.com/grafov/m3u8"
 )
 
+// plugin parser interface
 type Plugin interface {
 	Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (info *model.LiveInfo, error error)
 }
 
+// transform the request before getM3U8content
 type Transformer interface {
 	Transform(req *http.Request, info *model.LiveInfo) error
 }
 
+// do a healthcheck when GetM3U8Content returned
 type HealthCheck interface {
 	Check(content string, info *model.LiveInfo) error
 }
 
+// host a live feed directly instead of generating a m3u8 playlist
 type FeedHost interface {
 	Host(c *gin.Context, info *model.LiveInfo) error
+}
+
+// transform the tsproxy link
+type TsTransformer interface {
+	TransformTs(rawLink string, tsLink string, info *model.LiveInfo) string
 }
 
 type UrlInfo struct {

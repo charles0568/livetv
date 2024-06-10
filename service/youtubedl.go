@@ -119,7 +119,6 @@ func GetM3U8Content(ChannelURL string, liveM3U8 string, ProxyUrl string, Parser 
 		if transformer, ok := p.(plugin.Transformer); ok {
 			if li != nil {
 				transformer.Transform(req, li)
-				log.Println("transformed", liveM3U8, "=>", req.URL)
 			}
 		}
 	}

@@ -24,13 +24,13 @@ func PlaceHolderHLS() string {
 	tpl := `#EXTM3U
 #EXT-X-VERSION:3
 #EXT-X-MEDIA-SEQUENCE:1
-#EXT-X-TARGETDURATION:60
+#EXT-X-TARGETDURATION:30
 #EXT-X-DISCONTINUITY:0
-#EXTINF:60.000000,
+#EXTINF:30.000000,
 %s?t=1
-#EXTINF:60.000000,
+#EXTINF:30.000000,
 %s?t=2
-#EXTINF:60.000000,
+#EXTINF:30.000000,
 %s?t=3
 #EXT-X-ENDLIST
 `
@@ -52,7 +52,7 @@ func cleanUrl(Url string) string {
 	return cleanURL
 }
 
-func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool) string {
+func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool, fnTransform func(raw string, ts string) string) string {
 	var sb strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(data))
 	baseUrl := global.GetBaseURL(playlistUrl)
@@ -68,8 +68,11 @@ func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool) 
 				l = cleanUrl(baseUrl + l)
 			}
 			if proxy {
-				sb.WriteString(prefixURL)
-				sb.WriteString(util.CompressString(l))
+				tsLink := prefixURL + util.CompressString(l)
+				if fnTransform != nil {
+					tsLink = fnTransform(l, tsLink)
+				}
+				sb.WriteString(tsLink)
 			} else {
 				sb.WriteString(l)
 			}

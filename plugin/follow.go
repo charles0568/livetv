@@ -9,11 +9,8 @@ import (
 	"github.com/zjyl1994/livetv/model"
 )
 
-type URLM3U8Parser struct{}
-
-func (p *URLM3U8Parser) Transform(req *http.Request, info *model.LiveInfo) error {
-	directParser := &DirectM3U8Parser{}
-	return directParser.Transform(req, info)
+type URLM3U8Parser struct {
+	DirectM3U8Parser
 }
 
 func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo string) (*model.LiveInfo, error) {
@@ -45,8 +42,7 @@ func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo
 	if redir == "" {
 		return nil, NoMatchFeed
 	}
-	directParser := &DirectM3U8Parser{}
-	return directParser.Parse(redir, proxyUrl, previousExtraInfo)
+	return p.DirectM3U8Parser.Parse(redir, proxyUrl, previousExtraInfo)
 }
 
 func init() {
