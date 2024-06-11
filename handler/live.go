@@ -203,7 +203,6 @@ func TsProxyHandler(c *gin.Context) {
 		}
 	}
 	for _, key := range badKeys {
-		log.Println("Removing header", key)
 		req.Header.Del(key)
 	}
 	// added possible custom headers
@@ -215,11 +214,8 @@ func TsProxyHandler(c *gin.Context) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err, req, resp)
-		resp, _ := client.Transport.RoundTrip(req)
-		log.Println(resp)
-		c.AbortWithStatus(http.StatusInternalServerError)
-		c.Writer.WriteString(err.Error())
+		log.Println(err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 	for key, values := range resp.Header {
