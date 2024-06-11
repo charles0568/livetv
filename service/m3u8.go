@@ -65,7 +65,7 @@ func M3U8Process(playlistUrl string, data string, prefixURL string, proxy bool, 
 			sb.WriteString(l)
 		} else {
 			if !global.IsValidURL(l) {
-				l = cleanUrl(baseUrl + l)
+				l = cleanUrl(global.MergeUrl(baseUrl, l))
 			}
 			if proxy {
 				tsLink := prefixURL + util.CompressString(l)
