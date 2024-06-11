@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"github.com/zjyl1994/livetv/plugin"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zjyl1994/livetv/plugin"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
@@ -203,8 +204,11 @@ func TsProxyHandler(c *gin.Context) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
+		log.Println(err, req, resp)
+		resp, _ := client.Transport.RoundTrip(req)
+		log.Println(resp)
 		c.AbortWithStatus(http.StatusInternalServerError)
+		c.Writer.WriteString(err.Error())
 		return
 	}
 	for key, values := range resp.Header {
