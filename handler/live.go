@@ -195,6 +195,17 @@ func TsProxyHandler(c *gin.Context) {
 	req.RequestURI = ""
 	req.Host = ""
 	req.URL = rurl
+	// remove x-forward-* headers
+	badKeys := make([]string, 0)
+	for key, _ := range req.Header {
+		if strings.HasPrefix(key, "X-") {
+			badKeys = append(badKeys, key)
+		}
+	}
+	for _, key := range badKeys {
+		log.Println("Removing header", key)
+		req.Header.Del(key)
+	}
 	// added possible custom headers
 	queries := c.Request.URL.Query()
 	for key, value := range queries {
