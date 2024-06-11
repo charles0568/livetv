@@ -209,7 +209,7 @@ func TsProxyHandler(c *gin.Context) {
 	queries := c.Request.URL.Query()
 	for key, value := range queries {
 		if strings.HasPrefix(key, "header") && len(value) > 0 {
-			req.Header.Add(key[6:], value[0])
+			req.Header.Set(key[6:], value[0])
 		}
 	}
 	resp, err := client.Do(req)
