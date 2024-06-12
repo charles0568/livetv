@@ -42,7 +42,11 @@ func (p *URLM3U8Parser) Parse(liveUrl string, proxyUrl string, previousExtraInfo
 	if redir == "" {
 		return nil, NoMatchFeed
 	}
-	return p.DirectM3U8Parser.Parse(redir, proxyUrl, previousExtraInfo)
+	info, err := p.DirectM3U8Parser.Parse(redir, proxyUrl, previousExtraInfo)
+	if err == nil && info != nil {
+		info.Logo = ui.Logo
+	}
+	return info, err
 }
 
 func init() {

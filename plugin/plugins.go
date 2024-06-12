@@ -51,6 +51,7 @@ type TsTransformer interface {
 
 type UrlInfo struct {
 	Headers map[string]string `json:"headers"`
+	Logo    string            `json:"logo"`
 }
 
 var (
